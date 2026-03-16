@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout Original Litoral
+# 1. Layout Original Litoral
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -13,27 +13,30 @@ st.markdown("""
         border-radius: 5px;
         text-align: center;
         margin-bottom: 10px;
-        min-height: 190px;
+        min-height: 200px;
         border-top: 6px solid;
     }
     .maquina-id { color: #9ca3af; font-size: 0.65em; text-transform: uppercase; }
     .maquina-nome { color: white; font-weight: bold; font-size: 1em; margin: 8px 0; min-height: 40px; display: flex; align-items: center; justify-content: center; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; }
     .motivo-sub { color: #d1d5db; font-size: 0.8em; margin-top: 10px; border-top: 1px solid #374151; padding-top: 8px; }
-    .desc-curta { color: #fbbf24; font-weight: bold; display: block; margin-top: 2px; }
+    .desc-curta { color: #fbbf24; font-weight: bold; display: block; margin-top: 2px; font-size: 0.9em; }
     </style>
     """, unsafe_allow_html=True)
+
+st.title("MONITOR DE MANUTENÇÃO :: LITORAL")
 
 # 2. Conexão Firebase
 def buscar_dados():
     try:
+        # Puxa a string bruta do seu Firebase
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
         return r.text.upper()
     except: return ""
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos
+# 3. Lista de Ativos (ID é a chave de busca, Nome é apenas visual)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -47,21 +50,22 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição com Lógica de "Última Ocorrência" (rfind)
+# 4. Exibição com Guia por ID
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # O comando rfind busca de trás para frente, pegando a OS mais recente no Firebase
+    # BUSCA PELO ID (rfind garante a última OS enviada)
     pos = string_bruta.rfind(at['id']) 
-    ctx = string_bruta[pos:pos+150] if pos != -1 else ""
+    ctx = string_bruta[pos:pos+200] if pos != -1 else ""
     
-    desc = ""
-    if "DESC:" in ctx:
-        desc = " ".join(ctx.split("DESC:")[1].split("|")[0].split()[:3])
+    # Extração de OS e Descrição (Focada em strings enviadas via Power Automate)
+    os_num = ctx.split("OS:")[1].split("|")[0].strip() if "OS:" in ctx else "-"
+    desc = " ".join(ctx.split("DESC:")[1].split("|")[0].split()[:3]) if "DESC:" in ctx else ""
 
+    # Lógica de Status Baseada no Contexto do ID
     if "MÁQUINA PARADA" in ctx:
-        cor, lbl, mot = "#e74c3c", "PARADA", f"CORRETIVA <span class='desc-curta'>{desc}</span>"
+        cor, lbl, mot = "#e74c3c", "PARADA", f"CORRETIVA <span class='desc-curta'>OS {os_num}: {desc}</span>"
     elif "ABERTA" in ctx or "EXECUÇÃO" in ctx:
-        cor, lbl, mot = "#f1c40f", "ATENÇÃO", f"EM CURSO <span class='desc-curta'>{desc}</span>"
+        cor, lbl, mot = "#f1c40f", "ATENÇÃO", f"EM CURSO <span class='desc-curta'>OS {os_num}: {desc}</span>"
     elif "MÁQ.PAR.PARCIAL" in ctx:
         cor, lbl, mot = "#e67e22", "ALERTA", "PARCIAL"
     else:
