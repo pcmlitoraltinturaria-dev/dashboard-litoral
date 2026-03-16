@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo (Original Litoral)
+# 1. Configuração de Layout e Estilo (Compacto)
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -9,21 +9,27 @@ st.markdown("""
     .stApp { background-color: #0e1117; }
     .card {
         background-color: #1f2937;
-        padding: 15px;
+        padding: 12px;
         border-radius: 5px;
         text-align: center;
-        margin-bottom: 15px;
-        min-height: 250px;
+        margin-bottom: 10px;
+        min-height: 160px; /* Requadro menor conforme solicitado */
         border-top: 6px solid;
-        display: flex;
-        flex-direction: column;
     }
-    .maquina-id { color: #9ca3af; font-size: 0.7em; }
-    .maquina-nome { color: white; font-weight: bold; font-size: 1.1em; margin-top: 5px; height: 45px; display: flex; align-items: center; justify-content: center; }
-    .status-texto { font-weight: bold; font-size: 1.2em; text-transform: uppercase; margin: 15px 0; }
-    .footer-area { border-top: 1px solid #374151; padding-top: 10px; margin-top: auto; text-align: center; }
-    .tipo-manut { color: #d1d5db; font-size: 0.8em; font-weight: bold; display: block; margin-bottom: 5px; }
-    .desc-texto { color: #fbbf24; font-weight: bold; font-size: 0.85em; text-transform: uppercase; line-height: 1.2; }
+    .maquina-id { color: #9ca3af; font-size: 0.65em; text-transform: uppercase; }
+    .maquina-nome { color: white; font-weight: bold; font-size: 0.95em; margin: 5px 0; }
+    .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
+    
+    /* Descrição logo abaixo do Status */
+    .desc-imediata { 
+        color: #fbbf24; 
+        font-weight: bold; 
+        font-size: 0.8em; 
+        text-transform: uppercase; 
+        display: block;
+        padding: 0 5px;
+    }
+    .status-normal { color: #2ecc71; font-size: 0.8em; font-weight: normal; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -36,7 +42,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. LISTA COMPLETA DE ATIVOS (Garantindo que todas apareçam)
+# 3. Lista Completa de Ativos (21 máquinas)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -50,42 +56,40 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Renderização em Grade (5 colunas)
+# 4. Exibição em Grade de 5 colunas
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # Busca a última posição do ID na string
-    pos = string_bruta.rfind(f'"{at["id"]}"') # Busca exata pelo ID entre aspas
-    if pos == -1: pos = string_bruta.rfind(at['id']) # Busca secundária
+    # Busca pela última ocorrência do ID exato
+    pos = string_bruta.rfind(f'"{at["id"]}"')
+    if pos == -1: pos = string_bruta.rfind(at['id'])
     
     ctx = string_bruta[pos:pos+400] if pos != -1 else ""
     
-    # Extração Limpa da Descrição
+    # Extração da Descrição
     desc_real = ""
     if "DESC:" in ctx:
         desc_real = ctx.split("DESC:")[1].split("|")[0].split('"')[0].strip()
 
-    # Lógica de Status e Cores
+    # Lógica de Cores e Posição da Descrição
     if "MÁQUINA PARADA" in ctx:
-        cor, status, tipo = "#e74c3c", "PARADA", "MANUT. CORRETIVA"
-        detalhe = f"<span class='desc-texto'>{desc_real}</span>"
+        cor, lbl = "#e74c3c", "PARADA"
+        info_extra = f"<span class='desc-imediata'>{desc_real[:40]}</span>"
     elif "ABERTA" in ctx or "EXECUÇÃO" in ctx:
-        cor, status, tipo = "#f1c40f", "ATENÇÃO", "O.S. EM CURSO"
-        detalhe = f"<span class='desc-texto'>{desc_real}</span>"
+        cor, lbl = "#f1c40f", "ATENÇÃO"
+        info_extra = f"<span class='desc-imediata'>{desc_real[:40]}</span>"
+    elif "MÁQ.PAR.PARCIAL" in ctx:
+        cor, lbl = "#e67e22", "PARCIAL"
+        info_extra = f"<span class='desc-imediata'>{desc_real[:40]}</span>"
     else:
-        cor, status, tipo = "#2ecc71", "NORMAL", ""
-        detalhe = "✅ EQUIPAMENTO OPERANDO"
+        cor, lbl = "#2ecc71", "NORMAL"
+        info_extra = "<span class='status-normal'>✅ OPERANDO</span>"
 
     with cols[i % 5]:
         st.markdown(f"""
             <div class="card" style="border-top-color: {cor};">
-                <div>
-                    <div class="maquina-id">ID: {at['id']}</div>
-                    <div class="maquina-nome">{at['n']}</div>
-                    <div class="status-texto" style="color: {cor};">{status}</div>
-                </div>
-                <div class="footer-area">
-                    <span class="tipo-manut">{tipo}</span>
-                    {detalhe}
-                </div>
+                <div class="maquina-id">ID: {at['id']}</div>
+                <div class="maquina-nome">{at['n']}</div>
+                <div class="status-texto" style="color: {cor};">{lbl}</div>
+                {info_extra}
             </div>
         """, unsafe_allow_html=True)
