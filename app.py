@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo (Design Compacto com ID em Destaque)
+# 1. Configuração de Layout e Estilo
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -19,21 +19,22 @@ st.markdown("""
         flex-direction: column;
         justify-content: flex-start;
     }
-    /* ID Aumentado para maior visibilidade */
+    /* ID em Destaque Conforme Solicitado */
     .maquina-id { 
         color: #e5e7eb; 
-        font-size: 0.9em; 
+        font-size: 0.95em; 
         font-weight: bold; 
         text-transform: uppercase; 
         margin-bottom: 2px;
         background-color: #374151;
         border-radius: 3px;
         display: inline-block;
-        padding: 2px 8px;
+        padding: 2px 10px;
     }
     .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
     
+    /* TEXTO EM BRANCO E NEGRITO */
     .texto-destaque { 
         color: #FFFFFF !important; 
         font-weight: bold; 
@@ -54,7 +55,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Busca de Dados
+# 2. Busca de Dados (Sempre pegando o que há de mais novo)
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -63,7 +64,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista Completa de Ativos (21 Máquinas)
+# 3. Lista de Ativos
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -77,29 +78,38 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição
+# 4. Exibição com Lógica de Dados Atuais
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    pos = string_bruta.rfind(f'"{at["id"]}"')
-    if pos == -1: pos = string_bruta.rfind(at['id'])
+    # Procura o ID na string (como agora não há histórico, ele sempre achará o atual)
+    pos = string_bruta.find(at['id']) 
     
-    ctx = string_bruta[pos:pos+500] if pos != -1 else ""
+    # Pega um contexto menor (250 caracteres) para ser mais certeiro
+    ctx = string_bruta[pos:pos+250] if pos != -1 else ""
     
-    # Lógica de Tipo de Manutenção
+    # Identificação do Tipo (Mecânica, Elétrica ou Civil)
     if at['id'] == "26":
         tipo_servico = "MECÂNICA"
-    elif "ELETRICA" in ctx or "ELÉTRICA" in ctx:
+    elif "ELETRICA" in ctx:
         tipo_servico = "ELÉTRICA"
-    elif "MECANICA" in ctx or "MECÂNICA" in ctx:
+    elif "MECANICA" in ctx:
         tipo_servico = "MECÂNICA"
+    elif "CIVIL" in ctx:
+        tipo_servico = "CIVIL"
     else:
-        tipo_servico = "MANUTENÇÃO"
+        tipo_servico = ""
 
-    # Status e Cores
-    is_parada = "MÁQUINA PARADA" in ctx
-    is_atencao = "ABERTA" in ctx or "EXECUÇÃO" in ctx or "MÁQ.PAR.PARCIAL" in ctx
+    # Lógica de Status Baseada no Texto
+    # Se a palavra "NORMAL" aparecer logo após o ID, a máquina está OK
+    is_realmente_parada = "MÁQUINA PARADA" in ctx or "PARADA" in ctx
+    is_atencao = "MÁQ.PAR.PARCIAL" in ctx or "ABERTA" in ctx or "EXECUÇÃO" in ctx
+    
+    # Se o texto indicar "NORMAL" para aquele ID, forçamos o status verde
+    if "NORMAL" in ctx and not is_realmente_parada:
+        is_realmente_parada = False
+        is_atencao = False
 
-    if is_parada:
+    if is_realmente_parada:
         cor, lbl = "#e74c3c", "PARADA"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     elif is_atencao:
