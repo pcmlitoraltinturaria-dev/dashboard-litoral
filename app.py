@@ -1,8 +1,9 @@
 import streamlit as st
+import requests
 import pandas as pd
 
-# 1. Configuração de Layout Original (Fundo Escuro)
-st.set_page_config(page_title="Monitor de Manutenção", layout="wide")
+# 1. Configuração de Layout Original (Litoral Tinturaria)
+st.set_page_config(page_title="Monitor de Manutenção Litoral", layout="wide")
 
 st.markdown("""
     <style>
@@ -15,11 +16,11 @@ st.markdown("""
         border-radius: 5px;
         text-align: center;
         margin-bottom: 15px;
-        min-height: 180px;
+        min-height: 190px;
         border-top: 5px solid; 
     }
     .maquina-id { color: #9ca3af; font-size: 0.7em; margin-bottom: 5px; text-transform: uppercase; }
-    .maquina-nome { color: white; font-weight: bold; font-size: 1.1em; margin-bottom: 15px; min-height: 45px; display: flex; align-items: center; justify-content: center; }
+    .maquina-nome { color: white; font-weight: bold; font-size: 1.1em; margin-bottom: 10px; min-height: 45px; display: flex; align-items: center; justify-content: center; }
     .status-texto { font-weight: bold; font-size: 1.2em; text-transform: uppercase; }
     
     .motivo-sub { 
@@ -28,61 +29,81 @@ st.markdown("""
         margin-top: 15px; 
         border-top: 1px solid #374151; 
         padding-top: 10px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 5px;
+        font-style: italic;
     }
     </style>
     """, unsafe_allow_html=True)
 
 st.title("MONITOR DE MANUTENÇÃO :: LITORAL")
 
-# 2. Carregamento de Dados (Lendo o arquivo local do GitHub)
-@st.cache_data(ttl=10)
-def carregar_dados():
+# 2. Conexão com Firebase (Dados Reais)
+def buscar_dados_firebase():
+    url = "https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json"
     try:
-        # IMPORTANTE: mude 'manutencao.csv' para o nome real do seu arquivo no GitHub
-        return pd.read_csv('manutencao.csv') 
-    except Exception as e:
-        st.error(f"Erro ao ler arquivo: {e}")
-        return pd.DataFrame()
+        response = requests.get(url)
+        return response.text.upper() # Transformamos em maiúsculo para facilitar a busca
+    except:
+        return ""
 
-df = carregar_dados()
+string_bruta = buscar_dados_firebase()
 
-# 3. Exibição de TODAS as máquinas do arquivo
-if not df.empty:
-    # Cria o grid de 5 colunas para caber todas na tela
-    cols = st.columns(5)
+# 3. Lista Oficial de Ativos (Conforme seu Script de Recuperação)
+ativos = [
+    {"id": "701", "nome": "ABRIDOR BIANCO"},
+    {"id": "1501", "nome": "ABRIDOR BRASTEC 1"},
+    {"id": "1502", "nome": "ABRIDOR BRASTEC 2"},
+    {"id": "1503", "nome": "ABRIDOR BRASTEC 3"},
+    {"id": "1504", "nome": "ABRIDOR BRASTEC 4"},
+    {"id": "1506", "nome": "ABRIDOR BRASTEC 6"},
+    {"id": "1404", "nome": "HIDRORELAXADORA"},
+    {"id": "804", "nome": "CALANDRA ALBRECHT"},
+    {"id": "803", "nome": "CALANDRA LAFER"},
+    {"id": "1202", "nome": "RAMA LK"},
+    {"id": "1201", "nome": "RAMA UNITECH"},
+    {"id": "1601", "nome": "COZINHA CORANTE"},
+    {"id": "1602", "nome": "COZINHA QUÍMICO"},
+    {"id": "1001", "nome": "FELPADEIRA 1"},
+    {"id": "1002", "nome": "FELPADEIRA 2"},
+    {"id": "59", "nome": "HT 1324"},
+    {"id": "1306", "nome": "HT 1306"},
+    {"id": "1311", "nome": "HT 1311"},
+    {"id": "1314", "nome": "HT 1314"},
+    {"id": "2603", "nome": "SECADOR"},
+    {"id": "26", "nome": "EMPILHADEIRA"}
+]
+
+# 4. Renderização do Grid
+cols = st.columns(5)
+
+for i, ativo in enumerate(ativos):
+    # Lógica de Busca de Status na String do Firebase
+    posicao = string_bruta.find(ativo['id'])
+    contexto = string_bruta[posicao:posicao+150] if posicao != -1 else ""
     
-    for index, row in df.iterrows():
-        # Limpeza e lógica de status
-        status_raw = str(row['Status']).strip().lower()
-        os_atual = str(row['OS'])
-        
-        # Cores e Labels
-        if status_raw in ['aberta', 'em execução', 'execução']:
-            cor = "#f1c40f" # Amarelo
-            label = "ATENÇÃO"
-            motivo = f"🛠️ O.S. {os_atual} em andamento"
-        elif status_raw in ['finalizada', 'normal', 'operando', '']:
-            cor = "#2ecc71" # Verde
-            label = "NORMAL"
-            motivo = "✅ Equipamento Operando"
-        else:
-            cor = "#e74c3c" # Vermelho
-            label = "PARADA"
-            motivo = "⚠️ Manutenção Corretiva"
+    # DEFINIÇÃO DE CORES E MOTIVOS
+    if "MÁQUINA PARADA" in contexto:
+        cor = "#e74c3c" # Vermelho
+        label = "PARADA"
+        motivo = "⚠️ Manutenção Corretiva"
+    elif "ABERTA" in contexto or "EXECUÇÃO" in contexto:
+        cor = "#f1c40f" # Amarelo (NOVO)
+        label = "ATENÇÃO"
+        motivo = "🛠️ O.S. em Andamento"
+    elif "MÁQ.PAR.PARCIAL" in contexto:
+        cor = "#e67e22" # Laranja
+        label = "ALERTA"
+        motivo = "🟠 Parada Parcial"
+    else:
+        cor = "#2ecc71" # Verde
+        label = "NORMAL"
+        motivo = "✅ Equipamento Operando"
 
-        # Coloca cada máquina em uma coluna (distribuição automática)
-        with cols[index % 5]:
-            st.markdown(f"""
-                <div class="card" style="border-top-color: {cor};">
-                    <div class="maquina-id">ID SISTEMA: {row['ID']}</div>
-                    <div class="maquina-nome">{row['Maquina']}</div>
-                    <div class="status-texto" style="color: {cor};">{label}</div>
-                    <div class="motivo-sub">{motivo}</div>
-                </div>
-            """, unsafe_allow_html=True)
-else:
-    st.warning("Aguardando carregamento de dados ou arquivo vazio.")
+    with cols[i % 5]:
+        st.markdown(f"""
+            <div class="card" style="border-top-color: {cor};">
+                <div class="maquina-id">ID SISTEMA: {ativo['id']}</div>
+                <div class="maquina-nome">{ativo['nome']}</div>
+                <div class="status-texto" style="color: {cor};">{label}</div>
+                <div class="motivo-sub">{motivo}</div>
+            </div>
+        """, unsafe_allow_html=True)
