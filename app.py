@@ -1,109 +1,87 @@
 import streamlit as st
 import requests
-import pandas as pd
 
-# 1. Configuração de Layout Original (Litoral Tinturaria)
-st.set_page_config(page_title="Monitor de Manutenção Litoral", layout="wide")
+# 1. Layout Original Litoral (Fundo Escuro)
+st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; }
-    h1 { color: #4a5568; font-family: 'Arial Black', sans-serif; border-bottom: 2px solid #2d3748; padding-bottom: 10px; }
-    
     .card {
         background-color: #1f2937;
-        padding: 15px;
+        padding: 12px;
         border-radius: 5px;
         text-align: center;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         min-height: 190px;
-        border-top: 5px solid; 
+        border-top: 6px solid;
     }
-    .maquina-id { color: #9ca3af; font-size: 0.7em; margin-bottom: 5px; text-transform: uppercase; }
-    .maquina-nome { color: white; font-weight: bold; font-size: 1.1em; margin-bottom: 10px; min-height: 45px; display: flex; align-items: center; justify-content: center; }
-    .status-texto { font-weight: bold; font-size: 1.2em; text-transform: uppercase; }
+    .maquina-id { color: #9ca3af; font-size: 0.65em; text-transform: uppercase; }
+    .maquina-nome { color: white; font-weight: bold; font-size: 1em; margin: 8px 0; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+    .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; }
     
+    /* Motivo Ultra-Resumido */
     .motivo-sub { 
         color: #d1d5db; 
-        font-size: 0.85em; 
-        margin-top: 15px; 
+        font-size: 0.8em; 
+        margin-top: 10px; 
         border-top: 1px solid #374151; 
-        padding-top: 10px;
-        font-style: italic;
+        padding-top: 8px;
     }
+    .desc-curta { color: #fbbf24; font-weight: bold; display: block; margin-top: 2px; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("MONITOR DE MANUTENÇÃO :: LITORAL")
-
-# 2. Conexão com Firebase (Dados Reais)
-def buscar_dados_firebase():
-    url = "https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json"
+# 2. Conexão Firebase
+def buscar_dados():
     try:
-        response = requests.get(url)
-        return response.text.upper() # Transformamos em maiúsculo para facilitar a busca
-    except:
-        return ""
+        r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
+        return r.text.upper()
+    except: return ""
 
-string_bruta = buscar_dados_firebase()
+string_bruta = buscar_dados()
 
-# 3. Lista Oficial de Ativos (Conforme seu Script de Recuperação)
+# 3. Lista de Ativos (Resumida para o código)
 ativos = [
-    {"id": "701", "nome": "ABRIDOR BIANCO"},
-    {"id": "1501", "nome": "ABRIDOR BRASTEC 1"},
-    {"id": "1502", "nome": "ABRIDOR BRASTEC 2"},
-    {"id": "1503", "nome": "ABRIDOR BRASTEC 3"},
-    {"id": "1504", "nome": "ABRIDOR BRASTEC 4"},
-    {"id": "1506", "nome": "ABRIDOR BRASTEC 6"},
-    {"id": "1404", "nome": "HIDRORELAXADORA"},
-    {"id": "804", "nome": "CALANDRA ALBRECHT"},
-    {"id": "803", "nome": "CALANDRA LAFER"},
-    {"id": "1202", "nome": "RAMA LK"},
-    {"id": "1201", "nome": "RAMA UNITECH"},
-    {"id": "1601", "nome": "COZINHA CORANTE"},
-    {"id": "1602", "nome": "COZINHA QUÍMICO"},
-    {"id": "1001", "nome": "FELPADEIRA 1"},
-    {"id": "1002", "nome": "FELPADEIRA 2"},
-    {"id": "59", "nome": "HT 1324"},
-    {"id": "1306", "nome": "HT 1306"},
-    {"id": "1311", "nome": "HT 1311"},
-    {"id": "1314", "nome": "HT 1314"},
-    {"id": "2603", "nome": "SECADOR"},
-    {"id": "26", "nome": "EMPILHADEIRA"}
+    {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
+    {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
+    {"id": "1504", "n": "ABRIDOR BRASTEC 4"}, {"id": "1506", "n": "ABRIDOR BRASTEC 6"},
+    {"id": "1404", "n": "HIDRORELAXADORA"}, {"id": "804", "n": "CALANDRA ALBRECHT"},
+    {"id": "803", "n": "CALANDRA LAFER"}, {"id": "1202", "n": "RAMA LK"},
+    {"id": "1201", "n": "RAMA UNITECH"}, {"id": "1601", "n": "COZINHA CORANTE"},
+    {"id": "1602", "n": "COZINHA QUÍMICO"}, {"id": "1001", "n": "FELPADEIRA 1"},
+    {"id": "1002", "n": "FELPADEIRA 2"}, {"id": "59", "n": "HT 1324"},
+    {"id": "1306", "n": "HT 1306"}, {"id": "1311", "n": "HT 1311"},
+    {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Renderização do Grid
+# 4. Exibição
 cols = st.columns(5)
-
-for i, ativo in enumerate(ativos):
-    # Lógica de Busca de Status na String do Firebase
-    posicao = string_bruta.find(ativo['id'])
-    contexto = string_bruta[posicao:posicao+150] if posicao != -1 else ""
+for i, at in enumerate(ativos):
+    pos = string_bruta.find(at['id'])
+    ctx = string_bruta[pos:pos+150] if pos != -1 else ""
     
-    # DEFINIÇÃO DE CORES E MOTIVOS
-    if "MÁQUINA PARADA" in contexto:
-        cor = "#e74c3c" # Vermelho
-        label = "PARADA"
-        motivo = "⚠️ Manutenção Corretiva"
-    elif "ABERTA" in contexto or "EXECUÇÃO" in contexto:
-        cor = "#f1c40f" # Amarelo (NOVO)
-        label = "ATENÇÃO"
-        motivo = "🛠️ O.S. em Andamento"
-    elif "MÁQ.PAR.PARCIAL" in contexto:
-        cor = "#e67e22" # Laranja
-        label = "ALERTA"
-        motivo = "🟠 Parada Parcial"
+    # Extrai descritivo e limita a 2-3 palavras
+    desc = ""
+    if "DESC:" in ctx:
+        desc = ctx.split("DESC:")[1].split("|")[0].split()[:3]
+        desc = " ".join(desc)
+
+    if "MÁQUINA PARADA" in ctx:
+        cor, lbl, mot = "#e74c3c", "PARADA", f"CORRETIVA <span class='desc-curta'>{desc}</span>"
+    elif "ABERTA" in ctx or "EXECUÇÃO" in ctx:
+        cor, lbl, mot = "#f1c40f", "ATENÇÃO", f"EM CURSO <span class='desc-curta'>{desc}</span>"
+    elif "MÁQ.PAR.PARCIAL" in ctx:
+        cor, lbl, mot = "#e67e22", "ALERTA", "PARCIAL"
     else:
-        cor = "#2ecc71" # Verde
-        label = "NORMAL"
-        motivo = "✅ Equipamento Operando"
+        cor, lbl, mot = "#2ecc71", "NORMAL", "OPERANDO"
 
     with cols[i % 5]:
         st.markdown(f"""
             <div class="card" style="border-top-color: {cor};">
-                <div class="maquina-id">ID SISTEMA: {ativo['id']}</div>
-                <div class="maquina-nome">{ativo['nome']}</div>
-                <div class="status-texto" style="color: {cor};">{label}</div>
-                <div class="motivo-sub">{motivo}</div>
+                <div class="maquina-id">ID: {at['id']}</div>
+                <div class="maquina-nome">{at['n']}</div>
+                <div class="status-texto" style="color: {cor};">{lbl}</div>
+                <div class="motivo-sub">{mot}</div>
             </div>
         """, unsafe_allow_html=True)
