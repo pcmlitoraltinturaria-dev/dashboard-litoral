@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Layout Original Litoral
+# 1. Configuração de Layout Original Litoral
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -13,14 +13,18 @@ st.markdown("""
         border-radius: 5px;
         text-align: center;
         margin-bottom: 10px;
-        min-height: 200px;
+        min-height: 210px;
         border-top: 6px solid;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
     }
     .maquina-id { color: #9ca3af; font-size: 0.65em; text-transform: uppercase; }
-    .maquina-nome { color: white; font-weight: bold; font-size: 1em; margin: 8px 0; min-height: 40px; display: flex; align-items: center; justify-content: center; }
+    .maquina-nome { color: white; font-weight: bold; font-size: 1em; margin: 8px 0; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; }
     .motivo-sub { color: #d1d5db; font-size: 0.8em; margin-top: 10px; border-top: 1px solid #374151; padding-top: 8px; }
-    .desc-curta { color: #fbbf24; font-weight: bold; display: block; margin-top: 2px; font-size: 0.9em; }
+    .desc-rotulo { color: #9ca3af; font-size: 0.75em; display: block; margin-top: 5px; }
+    .desc-valor { color: #fbbf24; font-weight: bold; font-size: 0.85em; text-transform: uppercase; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -29,14 +33,13 @@ st.title("MONITOR DE MANUTENÇÃO :: LITORAL")
 # 2. Conexão Firebase
 def buscar_dados():
     try:
-        # Puxa a string bruta do seu Firebase
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
         return r.text.upper()
     except: return ""
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos (ID é a chave de busca, Nome é apenas visual)
+# 3. Lista de Ativos (Busca por ID, Exibição por Nome)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -50,33 +53,38 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição com Guia por ID
+# 4. Renderização baseada no ID
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # BUSCA PELO ID (rfind garante a última OS enviada)
+    # rfind garante que pegamos a entrada mais recente do Firebase para este ID
     pos = string_bruta.rfind(at['id']) 
-    ctx = string_bruta[pos:pos+200] if pos != -1 else ""
+    ctx = string_bruta[pos:pos+250] if pos != -1 else ""
     
-    # Extração de OS e Descrição (Focada em strings enviadas via Power Automate)
+    # Extração de OS e Descrição resumida
     os_num = ctx.split("OS:")[1].split("|")[0].strip() if "OS:" in ctx else "-"
-    desc = " ".join(ctx.split("DESC:")[1].split("|")[0].split()[:3]) if "DESC:" in ctx else ""
+    # Pega o que vem após DESC: e limita o tamanho para não quebrar o layout
+    descricao_completa = ctx.split("DESC:")[1].split("|")[0].strip() if "DESC:" in ctx else ""
+    descricao_resumida = (descricao_completa[:40] + "..") if len(descricao_completa) > 40 else descricao_completa
 
-    # Lógica de Status Baseada no Contexto do ID
+    # Lógica de Cores e Status
     if "MÁQUINA PARADA" in ctx:
-        cor, lbl, mot = "#e74c3c", "PARADA", f"CORRETIVA <span class='desc-curta'>OS {os_num}: {desc}</span>"
+        cor, lbl = "#e74c3c", "PARADA"
+        motivo = f"CORRETIVA <br> <span class='desc-rotulo'>DESCRIÇÃO:</span> <span class='desc-valor'>{descricao_resumida}</span>"
     elif "ABERTA" in ctx or "EXECUÇÃO" in ctx:
-        cor, lbl, mot = "#f1c40f", "ATENÇÃO", f"EM CURSO <span class='desc-curta'>OS {os_num}: {desc}</span>"
-    elif "MÁQ.PAR.PARCIAL" in ctx:
-        cor, lbl, mot = "#e67e22", "ALERTA", "PARCIAL"
+        cor, lbl = "#f1c40f", "ATENÇÃO"
+        motivo = f"EM CURSO (OS {os_num}) <br> <span class='desc-rotulo'>DESCRIÇÃO:</span> <span class='desc-valor'>{descricao_resumida}</span>"
     else:
-        cor, lbl, mot = "#2ecc71", "NORMAL", "OPERANDO"
+        cor, lbl = "#2ecc71", "NORMAL"
+        motivo = "✅ EQUIPAMENTO OPERANDO"
 
     with cols[i % 5]:
         st.markdown(f"""
             <div class="card" style="border-top-color: {cor};">
-                <div class="maquina-id">ID: {at['id']}</div>
-                <div class="maquina-nome">{at['n']}</div>
-                <div class="status-texto" style="color: {cor};">{lbl}</div>
-                <div class="motivo-sub">{mot}</div>
+                <div>
+                    <div class="maquina-id">ID: {at['id']}</div>
+                    <div class="maquina-nome">{at['n']}</div>
+                    <div class="status-texto" style="color: {cor};">{lbl}</div>
+                </div>
+                <div class="motivo-sub">{motivo}</div>
             </div>
         """, unsafe_allow_html=True)
