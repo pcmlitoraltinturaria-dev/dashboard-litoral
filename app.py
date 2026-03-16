@@ -13,7 +13,7 @@ st.markdown("""
         border-radius: 5px;
         text-align: center;
         margin-bottom: 8px;
-        min-height: 145px; /* Altura reduzida para requadro menor */
+        min-height: 140px; 
         border-top: 6px solid;
         display: flex;
         flex-direction: column;
@@ -23,20 +23,24 @@ st.markdown("""
     .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
     
-    /* Descrição Negrito e Branco logo abaixo do Status */
-    .desc-imediata { 
-        color: #FFFFFF; 
+    /* TODAS AS DESCRIÇÕES E STATUS OPERANDO EM BRANCO E NEGRITO */
+    .texto-destaque { 
+        color: #FFFFFF !important; 
         font-weight: bold; 
         font-size: 0.8em; 
         text-transform: uppercase; 
         line-height: 1.1;
         margin-top: 4px;
-        display: -webkit-box;
-        -webkit-line-clamp: 3; /* Limita a 3 linhas para não estourar o card */
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+        display: block;
     }
-    .status-normal { color: #2ecc71; font-size: 0.75em; font-weight: normal; margin-top: 5px; }
+    
+    .status-normal-container {
+        margin-top: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -63,16 +67,15 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição em Grade (5 colunas para caber tudo na tela)
+# 4. Exibição em Grade
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # Localização precisa pelo ID
     pos = string_bruta.rfind(f'"{at["id"]}"')
     if pos == -1: pos = string_bruta.rfind(at['id'])
     
     ctx = string_bruta[pos:pos+450] if pos != -1 else ""
     
-    # Extração da Descrição Real
+    # Extração da Descrição
     desc_real = ""
     if "DESC:" in ctx:
         desc_real = ctx.split("DESC:")[1].split("|")[0].split('"')[0].strip()
@@ -80,16 +83,16 @@ for i, at in enumerate(ativos):
     # Lógica de Visual
     if "MÁQUINA PARADA" in ctx:
         cor, lbl = "#e74c3c", "PARADA"
-        info = f"<div class='desc-imediata'>{desc_real}</div>"
+        info = f"<div class='texto-destaque'>{desc_real}</div>"
     elif "ABERTA" in ctx or "EXECUÇÃO" in ctx:
         cor, lbl = "#f1c40f", "ATENÇÃO"
-        info = f"<div class='desc-imediata'>{desc_real}</div>"
+        info = f"<div class='texto-destaque'>{desc_real}</div>"
     elif "MÁQ.PAR.PARCIAL" in ctx:
         cor, lbl = "#e67e22", "PARCIAL"
-        info = f"<div class='desc-imediata'>{desc_real}</div>"
+        info = f"<div class='texto-destaque'>{desc_real}</div>"
     else:
         cor, lbl = "#2ecc71", "NORMAL"
-        info = "<div class='status-normal'>✅ OPERANDO</div>"
+        info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
 
     with cols[i % 5]:
         st.markdown(f"""
