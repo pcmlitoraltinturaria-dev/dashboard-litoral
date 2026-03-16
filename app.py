@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 import unicodedata
+import re
 
 # 1. Configuração de Layout
 st.set_page_config(page_title="Monitor de Manutenção Litoral", layout="wide")
@@ -28,9 +29,9 @@ def buscar_dados():
     except:
         return ""
 
-texto_sistema = buscar_dados()
+texto_bruto = buscar_dados()
 
-# 2. LISTA DE MÁQUINAS (Configurada para busca simplificada)
+# 2. LISTA DE MÁQUINAS
 maquinas = [
     {"id": "1311", "exibicao": "2 - HT_1311", "busca": "1311"},
     {"id": "701", "exibicao": "25 - Abridor Bianco_701", "busca": "701"},
@@ -59,18 +60,39 @@ maquinas = [
 
 # 3. EXIBIÇÃO EM GRID
 cols = st.columns(5)
+
 for i, mq in enumerate(maquinas):
-    status, cor = "NORMAL", "#28a745" # VERDE padrão
+    status, cor = "NORMAL", "#28a745"
     
-    if texto_sistema and mq['busca'] in texto_sistema:
-        pos = texto_sistema.find(mq['busca'])
-        # Pega os 300 caracteres após encontrar a máquina para ver o status dela
-        trecho = texto_sistema[pos:pos+300]
+    if texto_bruto and mq['busca'] in texto_bruto:
+        # Encontra todas as ocorrências de números de OS (Ex: 2548, 2501) seguidas de status
+        # Filtramos o texto para a vizinhança da máquina específica
+        pos_inicio = texto_bruto.find(mq['busca'])
+        trecho_maquina = texto_bruto[pos_inicio:pos_inicio+2000] # Pega um bloco grande
         
-        if "MAQUINA PARADA" in trecho:
-            status, cor = "PARADA", "#dc3545" # VERMELHO
-        elif "MAQ.PAR.PARCIAL" in trecho or "PARADA PARCIAL" in trecho:
-            status, cor = "PARCIAL", "#FFD700" # AMARELO (Gold)
+        # Procura por padrões de OS: Sequência de 4 ou 5 dígitos + Status
+        # Ex: "2548 FINALIZADA" ou "2501 PARADA"
+        os_encontradas = re.findall(r'(\d{4,5})\s*(FINALIZADA|ABERTA|PARADA|EM EXECUCAO)', trecho_maquina)
+        
+        if os_encontradas:
+            # Seleciona a OS com o maior número (mais recente)
+            os_recente = max(os_encontradas, key=lambda x: int(x[0]))
+            numero_os, status_os = os_recente
+            
+            # Analisa o status da OS mais recente
+            if "FINALIZADA" in status_os:
+                status, cor = "NORMAL", "#28a745"
+            else:
+                # Se não está finalizada, verifica se é parada total ou parcial no texto daquela OS
+                pos_os = trecho_maquina.find(numero_os)
+                sub_trecho = trecho_maquina[pos_os:pos_os+200]
+                
+                if "MAQUINA PARADA PARCIAL" in sub_trecho or "MAQ.PAR.PARCIAL" in sub_trecho:
+                    status, cor = "PARCIAL", "#FFD700"
+                elif "MAQUINA PARADA" in sub_trecho:
+                    status, cor = "PARADA", "#dc3545"
+                else:
+                    status, cor = "NORMAL", "#28a745"
 
     with cols[i % 5]:
         st.markdown(f"""
