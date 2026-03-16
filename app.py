@@ -60,7 +60,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos (21 Máquinas)
+# 3. Lista de Ativos
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -80,28 +80,26 @@ for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id']) 
     ctx = string_bruta[pos:pos+350] if pos != -1 else ""
     
-    # Identificação do Tipo de Manutenção
+    # Identificação do Tipo
     if at['id'] == "26": tipo_servico = "MECÂNICA"
     elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
     elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
     elif "CIVIL" in ctx: tipo_servico = "CIVIL"
     else: tipo_servico = "MANUTENÇÃO"
 
-    # --- LÓGICA DE STATUS INFALÍVEL ---
+    # --- LÓGICA DE PRIORIDADE SOLICITADA ---
     
-    # 1. PRIORIDADE MÁXIMA: MÁQUINA PARADA REAL (Sem a palavra Parcial)
-    # Se no texto houver "MÁQUINA PARADA" e não houver "PARCIAL", é VERMELHO.
-    if ("MÁQUINA PARADA" in ctx or "STATUS PARADA" in ctx) and "PARCIAL" not in ctx:
-        cor, lbl = "#e74c3c", "PARADA"
-        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-    
-    # 2. PRIORIDADE MÉDIA: PARCIAL OU ORDENS ABERTAS/EXECUÇÃO
-    # Se o texto contiver PARCIAL, ou se a máquina tiver O.S. mas não estiver parada total.
-    elif "PARCIAL" in ctx or "ABERTA" in ctx or "EXECUÇÃO" in ctx:
+    # 1. Primeiro: Concentra-se na palavra "PARCIAL" (Amarelo)
+    if "PARCIAL" in ctx:
         cor, lbl = "#f1c40f", "PARCIAL"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     
-    # 3. PRIORIDADE MÍNIMA: OPERAÇÃO NORMAL
+    # 2. Segundo: Se não tem parcial, procura pela palavra "PARADA" (Vermelho)
+    elif "PARADA" in ctx:
+        cor, lbl = "#e74c3c", "PARADA"
+        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
+    
+    # 3. O restante é Verde
     else:
         cor, lbl = "#2ecc71", "NORMAL"
         info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
