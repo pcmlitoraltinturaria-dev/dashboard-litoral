@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo (Compacto Litoral)
+# 1. Configuração de Layout e Estilo (Design Compacto Litoral)
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -67,7 +67,7 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição
+# 4. Exibição com Grade
 cols = st.columns(5)
 for i, at in enumerate(ativos):
     pos = string_bruta.rfind(f'"{at["id"]}"')
@@ -75,14 +75,13 @@ for i, at in enumerate(ativos):
     
     ctx = string_bruta[pos:pos+400] if pos != -1 else ""
     
-    # Identifica o tipo de manutenção
-    tipo_servico = ""
-    if "ELETRICA" in ctx:
-        tipo_servico = "ELÉTRICA"
-    elif "MECANICA" in ctx:
-        tipo_servico = "MECÂNICA"
+    # Lógica de Tipo de Manutenção
+    if at['id'] == "26":
+        tipo_servico = "MECÂNICA" # Regra específica para empilhadeiras
+    else:
+        tipo_servico = "ELÉTRICA" if "ELETRICA" in ctx else "MECÂNICA" if "MECANICA" in ctx else ""
 
-    # Lógica de Visual unificada para Vermelho e Amarelo
+    # Definição de Cores e Status
     if "MÁQUINA PARADA" in ctx:
         cor, lbl = "#e74c3c", "PARADA"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
