@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 from io import StringIO
 
-# 1. Configuração de Layout e Estilo (Original Litoral)
+# 1. Configuração de Layout e Estilo (Fundo Escuro Original)
 st.set_page_config(page_title="Monitor de Manutenção", layout="wide")
 
 st.markdown("""
@@ -30,47 +30,50 @@ st.markdown("""
 
 st.title("MONITOR DE MANUTENÇÃO :: LITORAL")
 
-# 2. Função para carregar seus dados reais
-@st.cache_data(ttl=60)
+# 2. Função para carregar dados reais (URL da sua planilha)
+@st.cache_data(ttl=30)
 def carregar_dados():
-    # URL DO SEU CSV (Substitua pelo seu link real do Google Sheets se necessário)
-    url = "SUA_URL_DO_CSV_AQUI" 
-    
+    # COLOQUE O SEU LINK DO GOOGLE SHEETS ABAIXO
+    url = "SUA_URL_DO_GOOGLE_SHEETS_AQUI"
     try:
         response = requests.get(url)
         df = pd.read_csv(StringIO(response.text))
         return df
     except:
-        # Se falhar, exibe um erro mas não trava o app
-        st.error("Erro ao carregar dados da planilha.")
         return pd.DataFrame()
 
 df = carregar_dados()
 
-# 3. Exibição Dinâmica de todas as máquinas
+# 3. Renderização de todos os itens da planilha
 if not df.empty:
-    cols = st.columns(5) # Mantém 5 colunas como no seu print original
-    idx_col = 0
-
+    # Definindo 5 colunas para o grid
+    cols = st.columns(5)
+    
     for index, row in df.iterrows():
-        # Lógica de Cores e Motivos
+        # Lógica de Cores e Status
         status_raw = str(row['Status']).strip().lower()
         os_atual = str(row['OS'])
         
+        # AMARELO: Aberta ou Em Execução
         if status_raw in ['aberta', 'em execução', 'execução']:
-            cor = "#f1c40f" # Amarelo
+            cor = "#f1c40f"
             label = "ATENÇÃO"
             motivo = f"🛠️ O.S. {os_atual} em andamento"
+        
+        # VERDE: Finalizada, Normal ou Operando
         elif status_raw in ['finalizada', 'normal', 'operando', '']:
-            cor = "#2ecc71" # Verde
+            cor = "#2ecc71"
             label = "NORMAL"
             motivo = "✅ Equipamento Operando"
+        
+        # VERMELHO: Qualquer outro estado (Parada/Crítica)
         else:
-            cor = "#e74c3c" # Vermelho
+            cor = "#e74c3c"
             label = "PARADA"
             motivo = "⚠️ Manutenção Corretiva"
 
-        with cols[idx_col]:
+        # Distribui os cards nas colunas
+        with cols[index % 5]:
             st.markdown(f"""
                 <div class="card" style="border-top-color: {cor};">
                     <div class="maquina-id">ID SISTEMA: {row['ID']}</div>
@@ -79,7 +82,5 @@ if not df.empty:
                     <div class="motivo-sub">{motivo}</div>
                 </div>
             """, unsafe_allow_html=True)
-        
-        idx_col = (idx_col + 1) % 5
 else:
-    st.warning("Nenhum dado encontrado na planilha.")
+    st.error("Erro: Verifique se o link da planilha no código está correto.")
