@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo (Design Compacto Litoral)
+# 1. Configuração de Layout e Estilo (Design Compacto com ID em Destaque)
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -13,17 +13,27 @@ st.markdown("""
         border-radius: 5px;
         text-align: center;
         margin-bottom: 8px;
-        min-height: 140px; 
+        min-height: 145px; 
         border-top: 6px solid;
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
     }
-    .maquina-id { color: #9ca3af; font-size: 0.6em; text-transform: uppercase; margin-bottom: 2px; }
+    /* ID Aumentado para maior visibilidade */
+    .maquina-id { 
+        color: #e5e7eb; 
+        font-size: 0.9em; 
+        font-weight: bold; 
+        text-transform: uppercase; 
+        margin-bottom: 2px;
+        background-color: #374151;
+        border-radius: 3px;
+        display: inline-block;
+        padding: 2px 8px;
+    }
     .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
     
-    /* TEXTO EM BRANCO E NEGRITO PARA OPERANDO E TIPO DE MANUTENÇÃO */
     .texto-destaque { 
         color: #FFFFFF !important; 
         font-weight: bold; 
@@ -75,7 +85,7 @@ for i, at in enumerate(ativos):
     
     ctx = string_bruta[pos:pos+500] if pos != -1 else ""
     
-    # Lógica de Identificação do Tipo (Independente da posição na string)
+    # Lógica de Tipo de Manutenção
     if at['id'] == "26":
         tipo_servico = "MECÂNICA"
     elif "ELETRICA" in ctx or "ELÉTRICA" in ctx:
@@ -83,9 +93,9 @@ for i, at in enumerate(ativos):
     elif "MECANICA" in ctx or "MECÂNICA" in ctx:
         tipo_servico = "MECÂNICA"
     else:
-        tipo_servico = "MANUTENÇÃO" # Caso não encontre as palavras chave
+        tipo_servico = "MANUTENÇÃO"
 
-    # Definição de Cores e Status
+    # Status e Cores
     is_parada = "MÁQUINA PARADA" in ctx
     is_atencao = "ABERTA" in ctx or "EXECUÇÃO" in ctx or "MÁQ.PAR.PARCIAL" in ctx
 
@@ -102,8 +112,10 @@ for i, at in enumerate(ativos):
     with cols[i % 5]:
         st.markdown(f"""
             <div class="card" style="border-top-color: {cor};">
-                <div class="maquina-id">ID: {at['id']}</div>
-                <div class="maquina-nome">{at['n']}</div>
+                <div>
+                    <div class="maquina-id">ID: {at['id']}</div>
+                    <div class="maquina-nome">{at['n']}</div>
+                </div>
                 <div class="status-texto" style="color: {cor};">{lbl}</div>
                 {info}
             </div>
