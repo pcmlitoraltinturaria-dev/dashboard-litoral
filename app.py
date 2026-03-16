@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import unicodedata
 
 # 1. Configuração de Layout
 st.set_page_config(page_title="Monitor de Manutenção", layout="wide")
@@ -19,9 +20,8 @@ def buscar_dados():
     try:
         response = requests.get(FIREBASE_URL)
         if response.status_code == 200:
-            # Removemos acentos e deixamos tudo em maiúsculo para facilitar a busca
-            import unicodedata
             texto = str(response.json())
+            # Remove acentos
             texto = "".join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
             return texto.upper()
         return ""
@@ -30,7 +30,7 @@ def buscar_dados():
 
 texto_sistema = buscar_dados()
 
-# 3. LISTA OTIMIZADA (Busca por termos simplificados para garantir o encontro)
+# 3. LISTA OTIMIZADA
 maquinas = [
     {"id": "1311", "exibicao": "2 - HT_1311", "busca": "1311"},
     {"id": "701", "exibicao": "25 - Abridor Bianco_701", "busca": "701"},
@@ -45,16 +45,16 @@ maquinas = [
     {"id": "1001", "exibicao": "34 - Felpadeira Lafer_10010", "busca": "1001"},
     {"id": "1002", "exibicao": "35 - Felpadeira Lafer_10020", "busca": "1002"},
     {"id": "1403", "exibicao": "36 - Hidro Albrecht HP-100_14030", "busca": "1403"},
-    {"id": "1401", "busca": "1401", "exibicao": "37 - Hidro Tubula Indsteel 1_14010"},
-    {"id": "1202", "busca": "1202", "exibicao": "39 - Rama LK _12020"},
-    {"id": "1201", "busca": "1201", "exibicao": "40 - Rama Unitech_12010"},
-    {"id": "1306", "busca": "1306", "exibicao": "44 - HT_13060"},
-    {"id": "1314", "busca": "1314", "exibicao": "49 - HT_13140"},
-    {"id": "1324", "busca": "1324", "exibicao": "59 - HT_13240"},
-    {"id": "1601", "busca": "1601", "exibicao": "223 - COZINHA AUXILIAR DE CORANTE_16010"},
-    {"id": "1602", "busca": "1602", "exibicao": "224 - COZINHA AUXILIAR DE QUIMICO_16020"},
-    {"id": "1506", "busca": "1506", "exibicao": "235 - Abridor de malha Brastec 5_1506"},
-    {"id": "1404", "busca": "1404", "exibicao": "329 - Hidrorelaxadora 14040"}
+    {"id": "1401", "exibicao": "37 - Hidro Tubula Indsteel 1_14010", "busca": "1401"},
+    {"id": "1202", "exibicao": "39 - Rama LK _12020", "busca": "1202"},
+    {"id": "1201", "exibicao": "40 - Rama Unitech_12010", "busca": "1201"},
+    {"id": "1306", "exibicao": "44 - HT_13060", "busca": "1306"},
+    {"id": "1314", "exibicao": "49 - HT_13140", "busca": "1314"},
+    {"id": "1324", "exibicao": "59 - HT_13240", "busca": "1324"},
+    {"id": "1601", "exibicao": "223 - COZINHA AUXILIAR DE CORANTE_16010", "busca": "1601"},
+    {"id": "1602", "exibicao": "224 - COZINHA AUXILIAR DE QUIMICO_16020", "busca": "1602"},
+    {"id": "1506", "exibicao": "235 - Abridor de malha Brastec 5_1506", "busca": "1506"},
+    {"id": "1404", "exibicao": "329 - Hidrorelaxadora 14040", "busca": "1404"}
 ]
 
 cols = st.columns(5)
@@ -62,7 +62,6 @@ for i, mq in enumerate(maquinas):
     status, cor = "NORMAL", "#28a745"
     
     if texto_sistema and mq['busca'] in texto_sistema:
-        # Pega o trecho após encontrar o ID da máquina
         pos = texto_sistema.find(mq['busca'])
         trecho = texto_sistema[pos:pos+300]
         
@@ -78,3 +77,11 @@ for i, mq in enumerate(maquinas):
                         margin-bottom:15px; min-height:160px;">
                 <p style="font-size:11px; color:#a0aec0; margin:0;">BUSCA ID: {mq['busca']}</p>
                 <h4 style="margin:10px 0; font-size:14px; height:50px; display:flex; align-items:center; justify-content:center;">
+                    {mq['exibicao']}
+                </h4>
+                <p style="font-size:18px; font-weight:bold; color:{cor}; margin:0;">{status}</p>
+            </div>
+            """, unsafe_allow_html=True)
+
+if st.button('🔄 ATUALIZAR STATUS'):
+    st.rerun()
