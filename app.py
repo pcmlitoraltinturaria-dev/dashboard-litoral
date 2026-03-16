@@ -13,7 +13,7 @@ st.markdown("""
         border-radius: 5px;
         text-align: center;
         margin-bottom: 8px;
-        min-height: 135px; 
+        min-height: 140px; 
         border-top: 6px solid;
         display: flex;
         flex-direction: column;
@@ -67,29 +67,33 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição com Grade
+# 4. Exibição
 cols = st.columns(5)
 for i, at in enumerate(ativos):
     pos = string_bruta.rfind(f'"{at["id"]}"')
     if pos == -1: pos = string_bruta.rfind(at['id'])
     
-    ctx = string_bruta[pos:pos+400] if pos != -1 else ""
+    ctx = string_bruta[pos:pos+500] if pos != -1 else ""
     
-    # Lógica de Tipo de Manutenção
+    # Lógica de Identificação do Tipo (Independente da posição na string)
     if at['id'] == "26":
-        tipo_servico = "MECÂNICA" # Regra específica para empilhadeiras
+        tipo_servico = "MECÂNICA"
+    elif "ELETRICA" in ctx or "ELÉTRICA" in ctx:
+        tipo_servico = "ELÉTRICA"
+    elif "MECANICA" in ctx or "MECÂNICA" in ctx:
+        tipo_servico = "MECÂNICA"
     else:
-        tipo_servico = "ELÉTRICA" if "ELETRICA" in ctx else "MECÂNICA" if "MECANICA" in ctx else ""
+        tipo_servico = "MANUTENÇÃO" # Caso não encontre as palavras chave
 
     # Definição de Cores e Status
-    if "MÁQUINA PARADA" in ctx:
+    is_parada = "MÁQUINA PARADA" in ctx
+    is_atencao = "ABERTA" in ctx or "EXECUÇÃO" in ctx or "MÁQ.PAR.PARCIAL" in ctx
+
+    if is_parada:
         cor, lbl = "#e74c3c", "PARADA"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-    elif "ABERTA" in ctx or "EXECUÇÃO" in ctx:
+    elif is_atencao:
         cor, lbl = "#f1c40f", "ATENÇÃO"
-        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-    elif "MÁQ.PAR.PARCIAL" in ctx:
-        cor, lbl = "#e67e22", "PARCIAL"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     else:
         cor, lbl = "#2ecc71", "NORMAL"
