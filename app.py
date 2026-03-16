@@ -87,19 +87,21 @@ for i, at in enumerate(ativos):
     elif "CIVIL" in ctx: tipo_servico = "CIVIL"
     else: tipo_servico = "MANUTENÇÃO"
 
-    # --- LÓGICA DE STATUS REVISADA (PRIORIDADE TOTAL PARA PARADA) ---
+    # --- LÓGICA DE STATUS INFALÍVEL ---
     
-    # 1. Se o texto diz que está parada e NÃO é parcial, fica Vermelho.
-    if ("MÁQUINA PARADA" in ctx or " STATUS PARADA" in ctx) and "PARCIAL" not in ctx:
+    # 1. PRIORIDADE MÁXIMA: MÁQUINA PARADA REAL (Sem a palavra Parcial)
+    # Se no texto houver "MÁQUINA PARADA" e não houver "PARCIAL", é VERMELHO.
+    if ("MÁQUINA PARADA" in ctx or "STATUS PARADA" in ctx) and "PARCIAL" not in ctx:
         cor, lbl = "#e74c3c", "PARADA"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     
-    # 2. Se não caiu na regra acima, mas tem algum alerta de Parcial ou O.S. ativa.
+    # 2. PRIORIDADE MÉDIA: PARCIAL OU ORDENS ABERTAS/EXECUÇÃO
+    # Se o texto contiver PARCIAL, ou se a máquina tiver O.S. mas não estiver parada total.
     elif "PARCIAL" in ctx or "ABERTA" in ctx or "EXECUÇÃO" in ctx:
         cor, lbl = "#f1c40f", "PARCIAL"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     
-    # 3. Caso contrário, está Operando.
+    # 3. PRIORIDADE MÍNIMA: OPERAÇÃO NORMAL
     else:
         cor, lbl = "#2ecc71", "NORMAL"
         info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
