@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Layout Original Litoral (Fundo Escuro)
+# 1. Configuração de Layout Original Litoral
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -19,15 +19,7 @@ st.markdown("""
     .maquina-id { color: #9ca3af; font-size: 0.65em; text-transform: uppercase; }
     .maquina-nome { color: white; font-weight: bold; font-size: 1em; margin: 8px 0; min-height: 40px; display: flex; align-items: center; justify-content: center; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; }
-    
-    /* Motivo Ultra-Resumido */
-    .motivo-sub { 
-        color: #d1d5db; 
-        font-size: 0.8em; 
-        margin-top: 10px; 
-        border-top: 1px solid #374151; 
-        padding-top: 8px;
-    }
+    .motivo-sub { color: #d1d5db; font-size: 0.8em; margin-top: 10px; border-top: 1px solid #374151; padding-top: 8px; }
     .desc-curta { color: #fbbf24; font-weight: bold; display: block; margin-top: 2px; }
     </style>
     """, unsafe_allow_html=True)
@@ -41,7 +33,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos (Resumida para o código)
+# 3. Lista de Ativos
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -55,17 +47,16 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição
+# 4. Exibição com Lógica de "Última Ocorrência" (rfind)
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    pos = string_bruta.find(at['id'])
+    # O comando rfind busca de trás para frente, pegando a OS mais recente no Firebase
+    pos = string_bruta.rfind(at['id']) 
     ctx = string_bruta[pos:pos+150] if pos != -1 else ""
     
-    # Extrai descritivo e limita a 2-3 palavras
     desc = ""
     if "DESC:" in ctx:
-        desc = ctx.split("DESC:")[1].split("|")[0].split()[:3]
-        desc = " ".join(desc)
+        desc = " ".join(ctx.split("DESC:")[1].split("|")[0].split()[:3])
 
     if "MÁQUINA PARADA" in ctx:
         cor, lbl, mot = "#e74c3c", "PARADA", f"CORRETIVA <span class='desc-curta'>{desc}</span>"
