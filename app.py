@@ -60,7 +60,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos
+# 3. Lista de Ativos (21 Máquinas)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -80,26 +80,26 @@ for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id']) 
     ctx = string_bruta[pos:pos+350] if pos != -1 else ""
     
-    # Identificação do Tipo
+    # Identificação do Tipo (Lógica de prioridade de palavras)
     if at['id'] == "26": tipo_servico = "MECÂNICA"
     elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
     elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
     elif "CIVIL" in ctx: tipo_servico = "CIVIL"
     else: tipo_servico = "MANUTENÇÃO"
 
-    # --- LÓGICA DE PRIORIDADE SOLICITADA ---
+    # --- LÓGICA SOLICITADA: PARCIAL > PARADA > VERDE ---
     
-    # 1. Primeiro: Concentra-se na palavra "PARCIAL" (Amarelo)
+    # Primeiro checa se existe a palavra PARCIAL (Amarelo)
     if "PARCIAL" in ctx:
         cor, lbl = "#f1c40f", "PARCIAL"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     
-    # 2. Segundo: Se não tem parcial, procura pela palavra "PARADA" (Vermelho)
+    # Segundo, se não houver parcial, checa se existe a palavra PARADA (Vermelho)
     elif "PARADA" in ctx:
         cor, lbl = "#e74c3c", "PARADA"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     
-    # 3. O restante é Verde
+    # Se não houver nenhum dos dois, é verde (Normal)
     else:
         cor, lbl = "#2ecc71", "NORMAL"
         info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
