@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo (Compacto com Negrito Branco)
+# 1. Configuração de Layout e Estilo (Design Compacto Litoral)
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -9,28 +9,34 @@ st.markdown("""
     .stApp { background-color: #0e1117; }
     .card {
         background-color: #1f2937;
-        padding: 12px;
+        padding: 10px;
         border-radius: 5px;
         text-align: center;
-        margin-bottom: 10px;
-        min-height: 155px; /* Requadro menor e otimizado */
+        margin-bottom: 8px;
+        min-height: 145px; /* Altura reduzida para requadro menor */
         border-top: 6px solid;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
     }
-    .maquina-id { color: #9ca3af; font-size: 0.65em; text-transform: uppercase; }
-    .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.9em; margin: 4px 0; }
-    .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 4px; }
+    .maquina-id { color: #9ca3af; font-size: 0.6em; text-transform: uppercase; margin-bottom: 2px; }
+    .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase; }
+    .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
     
-    /* Descrição em Negrito e Branco conforme solicitado */
+    /* Descrição Negrito e Branco logo abaixo do Status */
     .desc-imediata { 
-        color: white; 
+        color: #FFFFFF; 
         font-weight: bold; 
-        font-size: 0.85em; 
+        font-size: 0.8em; 
         text-transform: uppercase; 
-        display: block;
-        padding: 2px 5px;
-        line-height: 1.2;
+        line-height: 1.1;
+        margin-top: 4px;
+        display: -webkit-box;
+        -webkit-line-clamp: 3; /* Limita a 3 linhas para não estourar o card */
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
-    .status-normal { color: #2ecc71; font-size: 0.8em; font-weight: normal; }
+    .status-normal { color: #2ecc71; font-size: 0.75em; font-weight: normal; margin-top: 5px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -43,7 +49,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista Completa de Ativos (21 máquinas - Guia por ID)
+# 3. Lista Completa de Ativos (21 Máquinas)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -57,33 +63,33 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição em Grade de 5 colunas
+# 4. Exibição em Grade (5 colunas para caber tudo na tela)
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # Busca pela última ocorrência (rfind) do ID exato
+    # Localização precisa pelo ID
     pos = string_bruta.rfind(f'"{at["id"]}"')
     if pos == -1: pos = string_bruta.rfind(at['id'])
     
-    ctx = string_bruta[pos:pos+400] if pos != -1 else ""
+    ctx = string_bruta[pos:pos+450] if pos != -1 else ""
     
-    # Extração da Descrição Real (ex: RESETAR INVERSOR...)
+    # Extração da Descrição Real
     desc_real = ""
     if "DESC:" in ctx:
         desc_real = ctx.split("DESC:")[1].split("|")[0].split('"')[0].strip()
 
-    # Lógica de Cores e Posição da Descrição
+    # Lógica de Visual
     if "MÁQUINA PARADA" in ctx:
         cor, lbl = "#e74c3c", "PARADA"
-        info_extra = f"<span class='desc-imediata'>{desc_real}</span>"
+        info = f"<div class='desc-imediata'>{desc_real}</div>"
     elif "ABERTA" in ctx or "EXECUÇÃO" in ctx:
         cor, lbl = "#f1c40f", "ATENÇÃO"
-        info_extra = f"<span class='desc-imediata'>{desc_real}</span>"
+        info = f"<div class='desc-imediata'>{desc_real}</div>"
     elif "MÁQ.PAR.PARCIAL" in ctx:
         cor, lbl = "#e67e22", "PARCIAL"
-        info_extra = f"<span class='desc-imediata'>{desc_real}</span>"
+        info = f"<div class='desc-imediata'>{desc_real}</div>"
     else:
         cor, lbl = "#2ecc71", "NORMAL"
-        info_extra = "<span class='status-normal'>✅ OPERANDO</span>"
+        info = "<div class='status-normal'>✅ OPERANDO</div>"
 
     with cols[i % 5]:
         st.markdown(f"""
@@ -91,6 +97,6 @@ for i, at in enumerate(ativos):
                 <div class="maquina-id">ID: {at['id']}</div>
                 <div class="maquina-nome">{at['n']}</div>
                 <div class="status-texto" style="color: {cor};">{lbl}</div>
-                {info_extra}
+                {info}
             </div>
         """, unsafe_allow_html=True)
