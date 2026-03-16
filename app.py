@@ -60,7 +60,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos
+# 3. Lista de Ativos (21 Máquinas)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -77,29 +77,25 @@ ativos = [
 # 4. Exibição
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # Procura a posição da última O.S. (rfind para pegar a mais recente sempre)
     pos = string_bruta.rfind(at['id']) 
     ctx = string_bruta[pos:pos+350] if pos != -1 else ""
     
-    # Identificação do Tipo (Prioriza as palavras completas)
+    # Identificação do Tipo
     if at['id'] == "26": tipo_servico = "MECÂNICA"
     elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
     elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
     elif "CIVIL" in ctx: tipo_servico = "CIVIL"
     else: tipo_servico = "MANUTENÇÃO"
 
-    # --- LÓGICA DE STATUS REVISADA ---
-    # Só será Vermelho se tiver "MÁQUINA PARADA" e NÃO tiver "PARCIAL"
+    # --- LÓGICA DE STATUS REVISADA (PARCIAL NO AMARELO) ---
     is_parada_total = ("MÁQUINA PARADA" in ctx or " STATUS PARADA" in ctx) and "PARCIAL" not in ctx
-    
-    # Será Amarelo se for Parcial ou se a O.S. estiver Aberta/Em Execução
-    is_atencao = "PARCIAL" in ctx or "ABERTA" in ctx or "EXECUÇÃO" in ctx
+    is_parcial = "PARCIAL" in ctx or "ABERTA" in ctx or "EXECUÇÃO" in ctx
 
     if is_parada_total:
         cor, lbl = "#e74c3c", "PARADA"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-    elif is_atencao:
-        cor, lbl = "#f1c40f", "ATENÇÃO"
+    elif is_parcial:
+        cor, lbl = "#f1c40f", "PARCIAL" # Texto alterado para PARCIAL conforme solicitado
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     else:
         cor, lbl = "#2ecc71", "NORMAL"
