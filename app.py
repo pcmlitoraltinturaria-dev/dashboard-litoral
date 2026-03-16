@@ -15,13 +15,13 @@ st.markdown("""
         border-radius: 5px;
         text-align: center;
         margin-bottom: 15px;
+        min-height: 180px;
         border-top: 5px solid; 
     }
     .maquina-id { color: #9ca3af; font-size: 0.7em; margin-bottom: 5px; text-transform: uppercase; }
-    .maquina-nome { color: white; font-weight: bold; font-size: 1.1em; margin-bottom: 15px; }
+    .maquina-nome { color: white; font-weight: bold; font-size: 1.1em; margin-bottom: 15px; min-height: 45px; display: flex; align-items: center; justify-content: center; }
     .status-texto { font-weight: bold; font-size: 1.2em; text-transform: uppercase; }
     
-    /* Linha do motivo que você pediu */
     .motivo-sub { 
         color: #d1d5db; 
         font-size: 0.85em; 
@@ -38,50 +38,43 @@ st.markdown("""
 
 st.title("MONITOR DE MANUTENÇÃO :: LITORAL")
 
-# 2. Carregamento de Dados (Mantenha o seu método de leitura original aqui)
-# Se você usa pd.read_csv("nome_do_arquivo.csv"), mantenha-o.
+# 2. Carregamento de Dados (Lendo o arquivo local do GitHub)
+@st.cache_data(ttl=10)
 def carregar_dados():
     try:
-        # Tenta ler o seu CSV original
-        df = pd.read_csv('dados_manutencao.csv') 
-        return df
-    except:
-        # Fallback apenas para não dar erro de tela vazia se o arquivo sumir
-        return pd.DataFrame([
-            {"ID": "1311", "Maquina": "2 - HT_1311", "OS": "-", "Status": "Normal"},
-            {"ID": "1202", "Maquina": "39 - Rama LK_1202", "OS": "2548", "Status": "Finalizada"}
-        ])
+        # IMPORTANTE: mude 'manutencao.csv' para o nome real do seu arquivo no GitHub
+        return pd.read_csv('manutencao.csv') 
+    except Exception as e:
+        st.error(f"Erro ao ler arquivo: {e}")
+        return pd.DataFrame()
 
 df = carregar_dados()
 
-# 3. Grid de Colunas (Restaurando o layout de 5 colunas dos seus prints)
+# 3. Exibição de TODAS as máquinas do arquivo
 if not df.empty:
+    # Cria o grid de 5 colunas para caber todas na tela
     cols = st.columns(5)
     
     for index, row in df.iterrows():
+        # Limpeza e lógica de status
         status_raw = str(row['Status']).strip().lower()
         os_atual = str(row['OS'])
         
-        # LÓGICA DE CORES E MOTIVOS
-        # AMARELO: Aberta ou Em Execução
+        # Cores e Labels
         if status_raw in ['aberta', 'em execução', 'execução']:
-            cor = "#f1c40f"
+            cor = "#f1c40f" # Amarelo
             label = "ATENÇÃO"
             motivo = f"🛠️ O.S. {os_atual} em andamento"
-        
-        # VERDE: Finalizada ou Normal (Equipamento Operando)
         elif status_raw in ['finalizada', 'normal', 'operando', '']:
-            cor = "#2ecc71"
+            cor = "#2ecc71" # Verde
             label = "NORMAL"
             motivo = "✅ Equipamento Operando"
-        
-        # VERMELHO: Parada
         else:
-            cor = "#e74c3c"
+            cor = "#e74c3c" # Vermelho
             label = "PARADA"
             motivo = "⚠️ Manutenção Corretiva"
 
-        # Renderização do Card no estilo exato da sua imagem b87e7b.png
+        # Coloca cada máquina em uma coluna (distribuição automática)
         with cols[index % 5]:
             st.markdown(f"""
                 <div class="card" style="border-top-color: {cor};">
@@ -91,3 +84,5 @@ if not df.empty:
                     <div class="motivo-sub">{motivo}</div>
                 </div>
             """, unsafe_allow_html=True)
+else:
+    st.warning("Aguardando carregamento de dados ou arquivo vazio.")
