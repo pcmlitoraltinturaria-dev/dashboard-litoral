@@ -3,7 +3,7 @@ import requests
 import unicodedata
 
 # 1. Configuração de Layout
-st.set_page_config(page_title="Monitor de Manutenção", layout="wide")
+st.set_page_config(page_title="Monitor de Manutenção Litoral", layout="wide")
 
 st.markdown("""
     <style>
@@ -21,7 +21,7 @@ def buscar_dados():
         response = requests.get(FIREBASE_URL)
         if response.status_code == 200:
             texto = str(response.json())
-            # Remove acentos
+            # Normalização: Remove acentos e deixa em MAIÚSCULO
             texto = "".join(c for c in unicodedata.normalize('NFD', texto) if unicodedata.category(c) != 'Mn')
             return texto.upper()
         return ""
@@ -30,7 +30,7 @@ def buscar_dados():
 
 texto_sistema = buscar_dados()
 
-# 3. LISTA OTIMIZADA
+# 2. LISTA DE MÁQUINAS (Configurada para busca simplificada)
 maquinas = [
     {"id": "1311", "exibicao": "2 - HT_1311", "busca": "1311"},
     {"id": "701", "exibicao": "25 - Abridor Bianco_701", "busca": "701"},
@@ -57,25 +57,27 @@ maquinas = [
     {"id": "1404", "exibicao": "329 - Hidrorelaxadora 14040", "busca": "1404"}
 ]
 
+# 3. EXIBIÇÃO EM GRID
 cols = st.columns(5)
 for i, mq in enumerate(maquinas):
-    status, cor = "NORMAL", "#28a745"
+    status, cor = "NORMAL", "#28a745" # VERDE padrão
     
     if texto_sistema and mq['busca'] in texto_sistema:
         pos = texto_sistema.find(mq['busca'])
+        # Pega os 300 caracteres após encontrar a máquina para ver o status dela
         trecho = texto_sistema[pos:pos+300]
         
         if "MAQUINA PARADA" in trecho:
-            status, cor = "PARADA", "#dc3545"
-        elif "MAQ.PAR.PARCIAL" in trecho:
-            status, cor = "PARCIAL", "#ff8c00"
+            status, cor = "PARADA", "#dc3545" # VERMELHO
+        elif "MAQ.PAR.PARCIAL" in trecho or "PARADA PARCIAL" in trecho:
+            status, cor = "PARCIAL", "#FFD700" # AMARELO (Gold)
 
     with cols[i % 5]:
         st.markdown(f"""
             <div style="background-color:#1e2530; padding:15px; border-radius:10px; 
                         border-top: 8px solid {cor}; text-align:center; color:white; 
                         margin-bottom:15px; min-height:160px;">
-                <p style="font-size:11px; color:#a0aec0; margin:0;">BUSCA ID: {mq['busca']}</p>
+                <p style="font-size:11px; color:#a0aec0; margin:0;">REF: {mq['busca']}</p>
                 <h4 style="margin:10px 0; font-size:14px; height:50px; display:flex; align-items:center; justify-content:center;">
                     {mq['exibicao']}
                 </h4>
