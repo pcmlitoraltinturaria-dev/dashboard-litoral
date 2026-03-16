@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo Litoral
+# 1. Configuração de Layout e Estilo (Compacto Litoral)
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -13,7 +13,7 @@ st.markdown("""
         border-radius: 5px;
         text-align: center;
         margin-bottom: 8px;
-        min-height: 140px; 
+        min-height: 135px; 
         border-top: 6px solid;
         display: flex;
         flex-direction: column;
@@ -23,10 +23,11 @@ st.markdown("""
     .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
     
+    /* TEXTO EM BRANCO E NEGRITO PARA OPERANDO E TIPO DE MANUTENÇÃO */
     .texto-destaque { 
         color: #FFFFFF !important; 
         font-weight: bold; 
-        font-size: 0.85em; 
+        font-size: 0.9em; 
         text-transform: uppercase; 
         line-height: 1.2;
         margin-top: 6px;
@@ -52,7 +53,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos (21 Máquinas)
+# 3. Lista Completa de Ativos (21 Máquinas)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -66,44 +67,31 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição com Lógica de Captura Final
+# 4. Exibição
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # Busca pela última ocorrência do ID
     pos = string_bruta.rfind(f'"{at["id"]}"')
     if pos == -1: pos = string_bruta.rfind(at['id'])
     
-    ctx = string_bruta[pos:pos+500] if pos != -1 else ""
+    ctx = string_bruta[pos:pos+400] if pos != -1 else ""
     
-    # LÓGICA DE CAPTURA DA DESCRIÇÃO FINAL:
-    # Como a descrição é a última parte antes do fechamento do registro (normalmente uma aspa ou barra)
-    desc_real = ""
-    if "MÁQUINA PARADA" in ctx or "ABERTA" in ctx:
-        # Tenta quebrar a string por palavras-chave que vêm antes da descrição final
-        # Exemplo: NARCISO FLORENCIO[DESCRICAO]
-        partes = ctx.split("CONSERTO") # "CONSERTO" costuma vir antes do nome e da descrição
-        if len(partes) > 1:
-            # Pega a parte após "CONSERTO", remove o nome do técnico (opcional) e limpa
-            sujo = partes[1].split('"')[0].strip()
-            # Remove números iniciais que sobraram do fatiamento e pega o texto final
-            desc_real = "".join([c for c in sujo if not c.isdigit()]).strip()
-            # Se ainda houver o nome do técnico grudado, aqui ele busca a descrição real:
-            # (Ajuste manual simples: pega as últimas palavras)
-            palavras = desc_real.split()
-            if len(palavras) > 2:
-                desc_real = " ".join(palavras[2:]) # Pula o Nome/Sobrenome do técnico
+    # Identifica o tipo de manutenção
+    tipo_servico = ""
+    if "ELETRICA" in ctx:
+        tipo_servico = "ELÉTRICA"
+    elif "MECANICA" in ctx:
+        tipo_servico = "MECÂNICA"
 
-    # Fallback caso a lógica acima falhe em algum formato novo
-    if not desc_real and "DESC:" in ctx:
-        desc_real = ctx.split("DESC:")[1].split("|")[0].split('"')[0].strip()
-
-    # Renderização
+    # Lógica de Visual unificada para Vermelho e Amarelo
     if "MÁQUINA PARADA" in ctx:
         cor, lbl = "#e74c3c", "PARADA"
-        info = f"<div class='texto-destaque'>{desc_real}</div>"
+        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     elif "ABERTA" in ctx or "EXECUÇÃO" in ctx:
         cor, lbl = "#f1c40f", "ATENÇÃO"
-        info = f"<div class='texto-destaque'>{desc_real}</div>"
+        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
+    elif "MÁQ.PAR.PARCIAL" in ctx:
+        cor, lbl = "#e67e22", "PARCIAL"
+        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     else:
         cor, lbl = "#2ecc71", "NORMAL"
         info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
