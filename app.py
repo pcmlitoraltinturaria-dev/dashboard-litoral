@@ -19,7 +19,6 @@ st.markdown("""
         flex-direction: column;
         justify-content: flex-start;
     }
-    /* ID em Destaque Conforme Solicitado */
     .maquina-id { 
         color: #e5e7eb; 
         font-size: 0.95em; 
@@ -33,8 +32,6 @@ st.markdown("""
     }
     .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
-    
-    /* TEXTO EM BRANCO E NEGRITO */
     .texto-destaque { 
         color: #FFFFFF !important; 
         font-weight: bold; 
@@ -44,7 +41,6 @@ st.markdown("""
         margin-top: 6px;
         display: block;
     }
-    
     .status-normal-container {
         margin-top: 5px;
         display: flex;
@@ -55,7 +51,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Busca de Dados (Sempre pegando o que há de mais novo)
+# 2. Busca de Dados
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -78,38 +74,28 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Exibição com Lógica de Dados Atuais
+# 4. Exibição
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # Procura o ID na string (como agora não há histórico, ele sempre achará o atual)
-    pos = string_bruta.find(at['id']) 
+    # Procura a posição da última O.S. (rfind para pegar a mais recente sempre)
+    pos = string_bruta.rfind(at['id']) 
+    ctx = string_bruta[pos:pos+350] if pos != -1 else ""
     
-    # Pega um contexto menor (250 caracteres) para ser mais certeiro
-    ctx = string_bruta[pos:pos+250] if pos != -1 else ""
-    
-    # Identificação do Tipo (Mecânica, Elétrica ou Civil)
-    if at['id'] == "26":
-        tipo_servico = "MECÂNICA"
-    elif "ELETRICA" in ctx:
-        tipo_servico = "ELÉTRICA"
-    elif "MECANICA" in ctx:
-        tipo_servico = "MECÂNICA"
-    elif "CIVIL" in ctx:
-        tipo_servico = "CIVIL"
-    else:
-        tipo_servico = ""
+    # Identificação do Tipo (Prioriza as palavras completas)
+    if at['id'] == "26": tipo_servico = "MECÂNICA"
+    elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
+    elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
+    elif "CIVIL" in ctx: tipo_servico = "CIVIL"
+    else: tipo_servico = "MANUTENÇÃO"
 
-    # Lógica de Status Baseada no Texto
-    # Se a palavra "NORMAL" aparecer logo após o ID, a máquina está OK
-    is_realmente_parada = "MÁQUINA PARADA" in ctx or "PARADA" in ctx
-    is_atencao = "MÁQ.PAR.PARCIAL" in ctx or "ABERTA" in ctx or "EXECUÇÃO" in ctx
+    # --- LÓGICA DE STATUS REVISADA ---
+    # Só será Vermelho se tiver "MÁQUINA PARADA" e NÃO tiver "PARCIAL"
+    is_parada_total = ("MÁQUINA PARADA" in ctx or " STATUS PARADA" in ctx) and "PARCIAL" not in ctx
     
-    # Se o texto indicar "NORMAL" para aquele ID, forçamos o status verde
-    if "NORMAL" in ctx and not is_realmente_parada:
-        is_realmente_parada = False
-        is_atencao = False
+    # Será Amarelo se for Parcial ou se a O.S. estiver Aberta/Em Execução
+    is_atencao = "PARCIAL" in ctx or "ABERTA" in ctx or "EXECUÇÃO" in ctx
 
-    if is_realmente_parada:
+    if is_parada_total:
         cor, lbl = "#e74c3c", "PARADA"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     elif is_atencao:
