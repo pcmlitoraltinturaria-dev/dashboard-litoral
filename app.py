@@ -80,23 +80,26 @@ for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id']) 
     ctx = string_bruta[pos:pos+350] if pos != -1 else ""
     
-    # Identificação do Tipo
+    # Identificação do Tipo de Manutenção
     if at['id'] == "26": tipo_servico = "MECÂNICA"
     elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
     elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
     elif "CIVIL" in ctx: tipo_servico = "CIVIL"
     else: tipo_servico = "MANUTENÇÃO"
 
-    # --- LÓGICA DE STATUS REVISADA (PARCIAL NO AMARELO) ---
-    is_parada_total = ("MÁQUINA PARADA" in ctx or " STATUS PARADA" in ctx) and "PARCIAL" not in ctx
-    is_parcial = "PARCIAL" in ctx or "ABERTA" in ctx or "EXECUÇÃO" in ctx
-
-    if is_parada_total:
+    # --- LÓGICA DE STATUS REVISADA (PRIORIDADE TOTAL PARA PARADA) ---
+    
+    # 1. Se o texto diz que está parada e NÃO é parcial, fica Vermelho.
+    if ("MÁQUINA PARADA" in ctx or " STATUS PARADA" in ctx) and "PARCIAL" not in ctx:
         cor, lbl = "#e74c3c", "PARADA"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-    elif is_parcial:
-        cor, lbl = "#f1c40f", "PARCIAL" # Texto alterado para PARCIAL conforme solicitado
+    
+    # 2. Se não caiu na regra acima, mas tem algum alerta de Parcial ou O.S. ativa.
+    elif "PARCIAL" in ctx or "ABERTA" in ctx or "EXECUÇÃO" in ctx:
+        cor, lbl = "#f1c40f", "PARCIAL"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
+    
+    # 3. Caso contrário, está Operando.
     else:
         cor, lbl = "#2ecc71", "NORMAL"
         info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
