@@ -77,31 +77,34 @@ ativos = [
 # 4. Exibição
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # rfind garante que pegamos a informação mais recente (final do arquivo)
     pos = string_bruta.rfind(at['id']) 
-    # REDUZIDO para 150 para não "vazar" dados da máquina ao lado
     ctx = string_bruta[pos:pos+150] if pos != -1 else ""
     
-    # Tipo de Manutenção
+    # Identificação do Tipo
     if at['id'] == "26": tipo_servico = "MECÂNICA"
     elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
     elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
     elif "CIVIL" in ctx: tipo_servico = "CIVIL"
     else: tipo_servico = "MANUTENÇÃO"
 
-    # --- LÓGICA DE ALTA CONFIANÇA ---
+    # --- LÓGICA DE CORES REVISADA (CIVIL SEMPRE AMARELO) ---
     
-    # 1. Se contém a palavra PARCIAL, o status é Amarelo.
-    if "PARCIAL" in ctx:
+    # 1. Se for CIVIL, ignora qualquer parada e fica sempre AMARELO
+    if tipo_servico == "CIVIL":
         cor, lbl = "#f1c40f", "PARCIAL"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     
-    # 2. Se não tem Parcial, mas tem PARADA, o status é Vermelho Absoluto.
+    # 2. Se não for Civil, mas tiver a palavra PARCIAL, fica AMARELO
+    elif "PARCIAL" in ctx:
+        cor, lbl = "#f1c40f", "PARCIAL"
+        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
+    
+    # 3. Se não for Civil nem Parcial, mas tiver a palavra PARADA, fica VERMELHO
     elif "PARADA" in ctx:
         cor, lbl = "#e74c3c", "PARADA"
         info = f"<div class='texto-destaque'>{tipo_servico}</div>"
     
-    # 3. Caso contrário, Operando (Verde).
+    # 4. Caso contrário, Verde
     else:
         cor, lbl = "#2ecc71", "NORMAL"
         info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
