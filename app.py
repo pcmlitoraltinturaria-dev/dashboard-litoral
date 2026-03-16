@@ -1,57 +1,81 @@
 import streamlit as st
+import pandas as pd
 
-# Exemplo de como processar os dados (ajuste para a sua leitura de CSV)
-def render_maquina_card(nome, os, status):
-    status_limpo = str(status).strip().lower()
+# 1. Configuração de Layout e Estilo (Mantendo o padrão Litoral das imagens)
+st.set_page_config(page_title="Monitor de Manutenção", layout="wide")
+
+st.markdown("""
+    <style>
+    .stApp { background-color: #0e1117; }
+    h1 { color: #4a5568; font-family: 'Arial Black'; border-bottom: 2px solid #2d3748; padding-bottom: 10px; }
     
-    # Lógica de Cores e Motivos
-    if status_limpo in ['aberta', 'em execução']:
-        cor = "#f1c40f"  # Amarelo
-        texto_cor = "#2c3e50"
-        motivo = f"🛠️ O.S. {os} {status}"
-    elif status_limpo in ['finalizada', '', 'operando']:
-        cor = "#2ecc71"  # Verde
-        texto_cor = "white"
-        motivo = "✅ Equipamento Operando"
-    else:
-        cor = "#e74c3c"  # Vermelho
-        texto_cor = "white"
-        motivo = "⚠️ Manutenção Corretiva"
-
-    # HTML do Card
-    card_html = f"""
-    <div style="
-        background-color: {cor};
-        color: {texto_cor};
-        padding: 15px;
+    .card {
+        background-color: #1f2937;
+        padding: 20px;
         border-radius: 10px;
         text-align: center;
-        margin-bottom: 10px;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-    ">
-        <h3 style="margin: 0; font-size: 1.2em;">{nome}</h3>
-        <hr style="border: 0.5px solid rgba(255,255,255,0.3); margin: 10px 0;">
-        <p style="margin: 0; font-size: 0.9em; font-weight: bold;">{motivo}</p>
-    </div>
-    """
-    return st.markdown(card_html, unsafe_allow_html=True)
+        margin-bottom: 15px;
+        height: 180px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        border-top: 8px solid; /* A cor será dinâmica */
+    }
+    .maquina-id { color: #9ca3af; font-size: 0.8em; margin-bottom: 5px; }
+    .maquina-nome { color: white; font-weight: bold; font-size: 1.1em; margin-bottom: 15px; }
+    .status-texto { font-weight: bold; font-size: 1.2em; text-transform: uppercase; }
+    .motivo-sub { color: #d1d5db; font-size: 0.85em; margin-top: 10px; border-top: 1px solid #374151; padding-top: 8px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- EXECUÇÃO NO STREAMLIT ---
-st.title("Painel de Manutenção")
+st.title("MONITOR DE MANUTENÇÃO :: LITORAL")
 
-# Exemplo com a Rama LK _1202
-# Aqui você substituiria pela leitura do seu arquivo CSV
-dados_exemplo = [
-    {"nome": "Rama LK _1202", "os": "2548", "status": "Finalizada"},
-    {"nome": "Tear Circular 01", "os": "2550", "status": "Em Execução"},
-    {"nome": "Compressor Central", "os": "2551", "status": "Crítica"}
-]
+# 2. Função para ler os dados (Ajuste o caminho para o seu CSV real)
+# Supondo que as colunas sejam: ID, Máquina, O.S., Status
+def carregar_dados():
+    try:
+        # Substitua 'dados_manutencao.csv' pelo nome correto do seu arquivo
+        df = pd.read_csv('dados_manutencao.csv') 
+        return df
+    except:
+        # Dados de fallback caso o arquivo não carregue para não quebrar o layout
+        return pd.DataFrame([
+            {"ID": "1202", "Maquina": "Rama LK_1202", "OS": "2548", "Status": "Finalizada"},
+            {"ID": "1311", "Maquina": "2 - HT_1311", "OS": "-", "Status": "Normal"}
+        ])
 
-col1, col2, col3 = st.columns(3)
+df = carregar_dados()
 
-with col1:
-    render_maquina_card("Rama LK _1202", "2548", "Finalizada")
-with col2:
-    render_maquina_card("Tear Circular 01", "2550", "Em Execução")
-with col3:
-    render_maquina_card("Compressor Central", "2551", "Crítica")
+# 3. Exibição em Grid (5 colunas como na sua foto)
+cols = st.columns(5)
+idx_col = 0
+
+for index, row in df.iterrows():
+    status_raw = str(row['Status']).strip().lower()
+    os_num = str(row['OS'])
+    
+    # Lógica de Cores e Motivos (Sua solicitação)
+    if status_raw in ['aberta', 'em execução', 'execução']:
+        cor_borda = "#f1c40f" # Amarelo
+        status_label = "ATENÇÃO"
+        motivo = f"🛠️ O.S. {os_num} em andamento"
+    elif status_raw in ['finalizada', 'normal', 'operando', '']:
+        cor_borda = "#2ecc71" # Verde
+        status_label = "NORMAL"
+        motivo = "✅ Equipamento Operando"
+    else:
+        cor_borda = "#e74c3c" # Vermelho
+        status_label = "PARADA"
+        motivo = "⚠️ Manutenção Corretiva"
+
+    with cols[idx_col]:
+        st.markdown(f"""
+            <div class="card" style="border-top-color: {cor_borda};">
+                <div class="maquina-id">ID SISTEMA: {row['ID']}</div>
+                <div class="maquina-nome">{row['Maquina']}</div>
+                <div class="status-texto" style="color: {cor_borda};">{status_label}</div>
+                <div class="motivo-sub">{motivo}</div>
+            </div>
+        """, unsafe_allow_html=True)
+    
+    idx_col = (idx_col + 1) % 5
