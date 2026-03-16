@@ -13,7 +13,7 @@ st.markdown("""
         border-radius: 5px;
         text-align: center;
         margin-bottom: 10px;
-        min-height: 210px;
+        min-height: 220px;
         border-top: 6px solid;
         display: flex;
         flex-direction: column;
@@ -30,7 +30,7 @@ st.markdown("""
 
 st.title("MONITOR DE MANUTENÇÃO :: LITORAL")
 
-# 2. Conexão Firebase
+# 2. Conexão Firebase (String Bruta)
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -39,7 +39,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos (Busca por ID, Exibição por Nome)
+# 3. Lista de Ativos (Chave de busca: ID)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -53,26 +53,34 @@ ativos = [
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, {"id": "26", "n": "EMPILHADEIRA"}
 ]
 
-# 4. Renderização baseada no ID
+# 4. Renderização dinâmica
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # rfind garante que pegamos a entrada mais recente do Firebase para este ID
+    # rfind busca a última atualização do ID no Firebase
     pos = string_bruta.rfind(at['id']) 
-    ctx = string_bruta[pos:pos+250] if pos != -1 else ""
+    ctx = string_bruta[pos:pos+300] if pos != -1 else ""
     
-    # Extração de OS e Descrição resumida
+    # Extração de OS e Descrição Real
     os_num = ctx.split("OS:")[1].split("|")[0].strip() if "OS:" in ctx else "-"
-    # Pega o que vem após DESC: e limita o tamanho para não quebrar o layout
-    descricao_completa = ctx.split("DESC:")[1].split("|")[0].strip() if "DESC:" in ctx else ""
-    descricao_resumida = (descricao_completa[:40] + "..") if len(descricao_completa) > 40 else descricao_completa
+    
+    # Captura a descrição após o marcador DESC: ou similar na string
+    desc_real = ""
+    if "DESC:" in ctx:
+        desc_real = ctx.split("DESC:")[1].split("|")[0].strip()
+    elif "CORRETIVA" in ctx: # Fallback para o formato do seu exemplo
+        # Tenta pegar a última parte da string que costuma ser a descrição
+        partes = ctx.split("|")
+        desc_real = partes[-1].strip() if len(partes) > 1 else ""
 
-    # Lógica de Cores e Status
+    # Limita o tamanho para o layout não quebrar
+    desc_view = (desc_real[:50] + "..") if len(desc_real) > 50 else desc_real
+
     if "MÁQUINA PARADA" in ctx:
         cor, lbl = "#e74c3c", "PARADA"
-        motivo = f"CORRETIVA <br> <span class='desc-rotulo'>DESCRIÇÃO:</span> <span class='desc-valor'>{descricao_resumida}</span>"
+        motivo = f"CORRETIVA <br> <span class='desc-rotulo'>DESCRIÇÃO:</span> <span class='desc-valor'>{desc_view}</span>"
     elif "ABERTA" in ctx or "EXECUÇÃO" in ctx:
         cor, lbl = "#f1c40f", "ATENÇÃO"
-        motivo = f"EM CURSO (OS {os_num}) <br> <span class='desc-rotulo'>DESCRIÇÃO:</span> <span class='desc-valor'>{descricao_resumida}</span>"
+        motivo = f"EM CURSO (OS {os_num}) <br> <span class='desc-rotulo'>DESCRIÇÃO:</span> <span class='desc-valor'>{desc_view}</span>"
     else:
         cor, lbl = "#2ecc71", "NORMAL"
         motivo = "✅ EQUIPAMENTO OPERANDO"
