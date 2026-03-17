@@ -1,22 +1,16 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout
+# 1. Configuração de Layout e Estilo
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; }
     .card {
-        background-color: #1f2937;
-        padding: 10px;
-        border-radius: 5px;
-        text-align: center;
-        margin-bottom: 8px;
-        min-height: 145px; 
-        border-top: 6px solid;
-        display: flex;
-        flex-direction: column;
+        background-color: #1f2937; padding: 10px; border-radius: 5px;
+        text-align: center; margin-bottom: 8px; min-height: 145px; 
+        border-top: 6px solid; display: flex; flex-direction: column;
         justify-content: flex-start;
     }
     .maquina-id { 
@@ -30,7 +24,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Busca de Dados
+# 2. Busca de Dados no Firebase
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -40,7 +34,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos
+# 3. Lista de Ativos conforme o Monitor
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -56,15 +50,14 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento com Lógica de Prioridade Final
+# 4. Processamento de Lógica de Cor
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # Encontra a posição mais recente do ID para evitar cabeçalhos antigos
     pos = string_bruta.rfind(at['id'])
     
     if pos != -1:
-        # Janela de leitura focada (80 caracteres) para evitar ler a máquina de baixo
-        ctx = string_bruta[pos : pos + 80]
+        # Janela curta para isolar a linha da O.S. (65 caracteres)
+        ctx = string_bruta[pos : pos + 65]
         
         # Identificação de Setor
         setor = "MANUTENÇÃO"
@@ -72,17 +65,11 @@ for i, at in enumerate(ativos):
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # LÓGICA DE DECISÃO (Ordem de prioridade importa aqui)
-        # 1. Civil é sempre Amarelo/Parcial
-        if setor == "CIVIL":
+        # Lógica de Prioridade: Se houver indicação de Parcial, o Amarelo domina
+        if "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx or setor == "CIVIL":
             cor, lbl = "#f1c40f", "PARCIAL"
-        # 2. Se o status final for Parcial (ex: Rama LK) -> Amarelo
-        elif "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
-            cor, lbl = "#f1c40f", "PARCIAL"
-        # 3. Se o status for Parada Total (ex: HT_1313) -> Vermelho
-        elif "MÁQUINA PARADA" in ctx or ("PARADA" in ctx and "PARCIAL" not in ctx):
+        elif "PARADA" in ctx:
             cor, lbl = "#e74c3c", "PARADA"
-        # 4. Caso contrário -> Verde
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
