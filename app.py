@@ -60,21 +60,20 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos Ajustada para Captura do Power Automate
+# 3. Lista de Ativos Atualizada (Inclusão da HT_1303)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
     {"id": "1504", "n": "ABRIDOR BRASTEC 4"}, {"id": "1506", "n": "ABRIDOR BRASTEC 6"},
     {"id": "1404", "n": "HIDRORELAXADORA"}, {"id": "804", "n": "CALANDRA ALBRECHT"},
-    {"id": "803", "n": "CALANDRA LAFER"}, 
-    {"id": "_1202", "n": "RAMA LK"}, # Ajustado para o padrão do relatório
+    {"id": "803", "n": "CALANDRA LAFER"}, {"id": "_1202", "n": "RAMA LK"},
     {"id": "1201", "n": "RAMA UNITECH"}, {"id": "1601", "n": "COZINHA CORANTE"},
     {"id": "QUIMICO_1602", "n": "COZINHA QUÍMICO"}, {"id": "1001", "n": "FELPADEIRA 1"},
-    {"id": "1002", "n": "FELPADEIRA 2"}, 
-    {"id": "HT_1324", "n": "HT 1324"}, # Ajustado com underline
+    {"id": "1002", "n": "FELPADEIRA 2"}, {"id": "HT_1324", "n": "HT 1324"},
     {"id": "1306", "n": "HT 1306"}, {"id": "1311", "n": "HT 1311"},
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, 
-    {"id": "EMPILHADEIRA 26", "n": "EMPILHADEIRA 26"}, {"id": "HT_1308", "n": "HT 1308"}
+    {"id": "EMPILHADEIRA 26", "n": "EMPILHADEIRA 26"}, {"id": "HT_1308", "n": "HT 1308"},
+    {"id": "HT_1303", "n": "HT 1303"} # Nova Máquina Incluída
 ]
 
 # 4. Exibição
