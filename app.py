@@ -56,40 +56,33 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento e Exibição
+# 4. Processamento
 cols = st.columns(5)
 for i, at in enumerate(ativos):
-    # Procura a posição da máquina no texto
     pos = string_bruta.rfind(at['id'])
     
     if pos != -1:
-        # Aumentamos a janela para 120 caracteres para garantir que pegue o status final da linha
-        ctx = string_bruta[pos : pos + 120]
+        # Janela de leitura reduzida para 75 caracteres para não ler a máquina debaixo
+        ctx = string_bruta[pos : pos + 75]
         
-        # Identificação de Setor
+        # Define setor
         setor = "MANUTENÇÃO"
         if "CIVIL" in ctx: setor = "CIVIL"
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # --- LÓGICA DE CORES REFINADA ---
-        
-        # 1. Se contiver "MÁQUINA PARADA" ou apenas "PARADA" (e não for CIVIL) -> VERMELHO
-        # Adicionado check para garantir que não seja "PARCIAL"
-        if ("PARADA" in ctx or "MÁQUINA PARADA" in ctx) and "PARCIAL" not in ctx and setor != "CIVIL":
-            cor, lbl = "#e74c3c", "PARADA"
-        
-        # 2. Se for setor CIVIL ou contiver "PARCIAL" -> AMARELO
-        elif setor == "CIVIL" or "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
+        # Lógica de Cores - ORDEM DE PRIORIDADE CORRIGIDA
+        # Primeiro verificamos se é PARCIAL (para evitar erro na RAMA)
+        if "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx or setor == "CIVIL":
             cor, lbl = "#f1c40f", "PARCIAL"
-            
-        # 3. Caso contrário -> VERDE
+        # Depois verificamos se é PARADA total
+        elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
+            cor, lbl = "#e74c3c", "PARADA"
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
         info = f"<div class='texto-destaque'>{setor if lbl != 'NORMAL' else '✅ OPERANDO'}</div>"
     else:
-        # Máquina não encontrada no relatório = OPERANDO
         cor, lbl, info = "#2ecc71", "NORMAL", "<div class='texto-destaque'>✅ OPERANDO</div>"
 
     with cols[i % 5]:
