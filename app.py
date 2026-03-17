@@ -1,63 +1,62 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo com Animações de Teste
+# 1. Configuração de Layout e Estilo Profissional
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #0e1117; }
+    .stApp { background-color: #0b0e14; }
     
-    /* Animação para o status PARADA (Vermelho) - Mais intensa */
+    /* Animação Crítica para PARADA */
     @keyframes piscar-critico {
-        0% { opacity: 1; border-top-color: #e74c3c; }
-        50% { opacity: 0.4; border-top-color: transparent; }
-        100% { opacity: 1; border-top-color: #e74c3c; }
-    }
-
-    /* Animação para o status PARCIAL (Amarelo) - Teste */
-    @keyframes piscar-alerta {
-        0% { opacity: 1; border-top-color: #f1c40f; }
-        50% { opacity: 0.6; border-top-color: #374151; }
-        100% { opacity: 1; border-top-color: #f1c40f; }
+        0% { opacity: 1; border-top-color: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
+        50% { opacity: 0.5; border-top-color: transparent; box-shadow: none; }
+        100% { opacity: 1; border-top-color: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
     }
 
     .card {
-        background-color: #1f2937; 
-        padding: 5px;
-        border-radius: 4px;
+        background-color: #1a1f29; 
+        padding: 8px;
+        border-radius: 6px;
         text-align: center; 
-        margin-bottom: 5px; 
-        min-height: 100px;
-        border-top: 4px solid;
+        margin-bottom: 6px; 
+        min-height: 110px;
+        border-top: 5px solid;
         display: flex; 
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-between;
+        border-right: 1px solid #2d3748;
+        border-left: 1px solid #2d3748;
+        border-bottom: 1px solid #2d3748;
     }
 
-    /* Classes de animação */
-    .blink-red { animation: piscar-critico 1s infinite; border-top-width: 5px !important; }
-    .blink-yellow { animation: piscar-alerta 1.5s infinite; border-top-width: 5px !important; }
+    /* Classe para PARADA */
+    .blink-red { 
+        animation: piscar-critico 1s infinite; 
+        background-color: #2d1616 !important; 
+    }
 
     .maquina-id { 
-        color: #e5e7eb; font-size: 0.75em; font-weight: bold; 
-        background-color: #374151; border-radius: 2px;
-        display: inline-block; padding: 1px 6px; margin-bottom: 2px;
+        color: #90cdf4; font-size: 0.75em; font-weight: bold; 
+        letter-spacing: 1px; margin-bottom: 4px;
     }
     .maquina-nome { 
-        color: #9ca3af; font-weight: bold; font-size: 0.75em; 
-        margin-bottom: 2px; line-height: 1;
+        color: #ffffff; font-weight: 800; font-size: 0.85em; 
+        margin-bottom: 5px; line-height: 1.1;
+        min-height: 32px; display: flex; align-items: center; justify-content: center;
     }
     .status-texto { 
-        font-weight: bold; font-size: 0.9em; 
-        text-transform: uppercase; margin-bottom: 1px; 
+        font-weight: 900; font-size: 1em; 
+        text-transform: uppercase; margin-bottom: 2px; 
     }
     .texto-destaque { 
-        color: #FFFFFF !important; font-weight: bold; font-size: 0.8em; 
-        margin-top: 2px; 
+        color: #a0aec0 !important; font-weight: bold; font-size: 0.75em; 
+        background: #2d3748; border-radius: 4px; padding: 2px 0;
     }
 
-    [data-testid="column"] { padding-left: 3px !important; padding-right: 3px !important; }
+    /* Ajuste de colunas */
+    [data-testid="column"] { padding: 2px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -87,7 +86,7 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento e Exibição
+# 4. Processamento e Exibição em 6 Colunas
 cols = st.columns(6)
 for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
@@ -101,15 +100,13 @@ for i, at in enumerate(ativos):
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # TESTE: Ambos piscando
         if "NORMAL" in ctx:
             cor, lbl = "#2ecc71", "NORMAL"
         elif "CIVIL" in ctx or "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
             cor, lbl = "#f1c40f", "PARCIAL"
-            extra_class = "blink-yellow" # Amarelo piscando para teste
         elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
             cor, lbl = "#e74c3c", "PARADA"
-            extra_class = "blink-red"    # Vermelho piscando
+            extra_class = "blink-red"
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
@@ -120,7 +117,7 @@ for i, at in enumerate(ativos):
     with cols[i % 6]:
         st.markdown(f"""
             <div class="card {extra_class}" style="border-top-color: {cor};">
-                <div class="maquina-id">ID: {at['id']}</div>
+                <div class="maquina-id">{at['id']}</div>
                 <div class="maquina-nome">{at['n']}</div>
                 <div class="status-texto" style="color: {cor};">{lbl}</div>
                 {info}
