@@ -8,15 +8,9 @@ st.markdown("""
     <style>
     .stApp { background-color: #0e1117; }
     .card {
-        background-color: #1f2937;
-        padding: 10px;
-        border-radius: 5px;
-        text-align: center;
-        margin-bottom: 8px;
-        min-height: 145px; 
-        border-top: 6px solid;
-        display: flex;
-        flex-direction: column;
+        background-color: #1f2937; padding: 10px; border-radius: 5px;
+        text-align: center; margin-bottom: 8px; min-height: 145px; 
+        border-top: 6px solid; display: flex; flex-direction: column;
         justify-content: flex-start;
     }
     .maquina-id { 
@@ -40,7 +34,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos (Ordem do seu Dashboard)
+# 3. Lista de Ativos
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -56,37 +50,41 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento e Exibição
+# 4. Processamento
 cols = st.columns(5)
-
 for i, at in enumerate(ativos):
-    # Busca a posição da máquina (rfind pega a última atualização no log)
     pos = string_bruta.rfind(at['id'])
     
     if pos != -1:
-        # Janela de contexto de 80 caracteres para isolar a linha da O.S.
+        # Janela de contexto de 80 caracteres
         ctx = string_bruta[pos : pos + 80]
         
-        # Identificação de Setor
+        # Define setor
         setor = "MANUTENÇÃO"
         if "CIVIL" in ctx: setor = "CIVIL"
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # LÓGICA DE CORES SOLICITADA:
-        # CIVIL ou QUALQUER TIPO DE PARCIAL = AMARELO
-        if "CIVIL" in ctx or "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
+        # --- NOVA LÓGICA DE CORES ---
+        
+        # 1. Se o status final for NORMAL, fica VERDE (Prioridade Máxima)
+        if "NORMAL" in ctx:
+            cor, lbl = "#2ecc71", "NORMAL"
+        
+        # 2. Se for CIVIL ou contiver PARCIAL, fica AMARELO
+        elif "CIVIL" in ctx or "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
             cor, lbl = "#f1c40f", "PARCIAL"
-        # PARADA TOTAL (Se não for parcial/civil) = VERMELHO
+            
+        # 3. Se for PARADA, fica VERMELHO
         elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
             cor, lbl = "#e74c3c", "PARADA"
-        # RESTANTE (Incluindo status "NORMAL" do relatório) = VERDE
+            
+        # 4. Padrão caso não encontre nada específico
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
         info = f"<div class='texto-destaque'>{setor if lbl != 'NORMAL' else '✅ OPERANDO'}</div>"
     else:
-        # Se o ID não constar no relatório, a máquina está liberada
         cor, lbl, info = "#2ecc71", "NORMAL", "<div class='texto-destaque'>✅ OPERANDO</div>"
 
     with cols[i % 5]:
