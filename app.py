@@ -60,7 +60,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos Atualizada
+# 3. Lista de Ativos Ajustada para Captura do Power Automate
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -68,11 +68,11 @@ ativos = [
     {"id": "1404", "n": "HIDRORELAXADORA"}, {"id": "804", "n": "CALANDRA ALBRECHT"},
     {"id": "803", "n": "CALANDRA LAFER"}, {"id": "1202", "n": "RAMA LK"},
     {"id": "1201", "n": "RAMA UNITECH"}, {"id": "1601", "n": "COZINHA CORANTE"},
-    {"id": "1602", "n": "COZINHA QUÍMICO"}, {"id": "1001", "n": "FELPADEIRA 1"},
-    {"id": "1002", "n": "FELPADEIRA 2"}, {"id": "59", "n": "HT 1324"},
+    {"id": "1602", "n": "QUIMICO_1602"}, {"id": "1001", "n": "FELPADEIRA 1"},
+    {"id": "1002", "n": "FELPADEIRA 2"}, {"id": "1324", "n": "HT 1324"},
     {"id": "1306", "n": "HT 1306"}, {"id": "1311", "n": "HT 1311"},
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, 
-    {"id": "26", "n": "EMPILHADEIRA"}, {"id": "46", "n": "HT 1308"}
+    {"id": "EMPILHADEIRA 26", "n": "EMPILHADEIRA 26"}, {"id": "HT_1308", "n": "HT 1308"}
 ]
 
 # 4. Exibição
