@@ -1,18 +1,25 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo com Animação Intermitente
+# 1. Configuração de Layout e Estilo com Animações de Teste
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; }
     
-    /* Animação para o status PARADA */
-    @keyframes piscar {
+    /* Animação para o status PARADA (Vermelho) - Mais intensa */
+    @keyframes piscar-critico {
         0% { opacity: 1; border-top-color: #e74c3c; }
-        50% { opacity: 0.5; border-top-color: transparent; }
+        50% { opacity: 0.4; border-top-color: transparent; }
         100% { opacity: 1; border-top-color: #e74c3c; }
+    }
+
+    /* Animação para o status PARCIAL (Amarelo) - Teste */
+    @keyframes piscar-alerta {
+        0% { opacity: 1; border-top-color: #f1c40f; }
+        50% { opacity: 0.6; border-top-color: #374151; }
+        100% { opacity: 1; border-top-color: #f1c40f; }
     }
 
     .card {
@@ -26,14 +33,11 @@ st.markdown("""
         display: flex; 
         flex-direction: column;
         justify-content: center;
-        transition: 0.3s;
     }
 
-    /* Classe que será aplicada apenas quando estiver PARADA */
-    .blink-red {
-        animation: piscar 1s infinite;
-        border-top: 5px solid #e74c3c !important;
-    }
+    /* Classes de animação */
+    .blink-red { animation: piscar-critico 1s infinite; border-top-width: 5px !important; }
+    .blink-yellow { animation: piscar-alerta 1.5s infinite; border-top-width: 5px !important; }
 
     .maquina-id { 
         color: #e5e7eb; font-size: 0.75em; font-weight: bold; 
@@ -53,10 +57,7 @@ st.markdown("""
         margin-top: 2px; 
     }
 
-    [data-testid="column"] {
-        padding-left: 3px !important;
-        padding-right: 3px !important;
-    }
+    [data-testid="column"] { padding-left: 3px !important; padding-right: 3px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -90,8 +91,6 @@ ativos = [
 cols = st.columns(6)
 for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
-    
-    # Variável para controlar a animação
     extra_class = ""
     
     if pos != -1:
@@ -102,13 +101,15 @@ for i, at in enumerate(ativos):
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
+        # TESTE: Ambos piscando
         if "NORMAL" in ctx:
             cor, lbl = "#2ecc71", "NORMAL"
         elif "CIVIL" in ctx or "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
             cor, lbl = "#f1c40f", "PARCIAL"
+            extra_class = "blink-yellow" # Amarelo piscando para teste
         elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
             cor, lbl = "#e74c3c", "PARADA"
-            extra_class = "blink-red" # Ativa a animação
+            extra_class = "blink-red"    # Vermelho piscando
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
