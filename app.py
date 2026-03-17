@@ -2,87 +2,53 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-# 1. Configuração de Layout para Máxima Otimização de Tela
-st.set_page_config(page_title="Central Litoral", layout="wide")
+# 1. Configuração e Estilo "Card Moderno"
+st.set_page_config(page_title="Central Litoral V3", layout="wide")
 
 st.markdown("""
     <style>
-    /* Remove margens do Streamlit para preencher a tela */
-    .block-container { 
-        padding-top: 0.2rem !important; 
-        padding-bottom: 0rem !important; 
-        padding-left: 0.5rem !important; 
-        padding-right: 0.5rem !important; 
-        max-width: 100% !important;
-    }
+    .block-container { padding: 0.5rem !important; max-width: 100% !important; }
     .stApp { background-color: #0b0e14; overflow: hidden; }
     
-    /* SETOR: Grudado na linha. O fundo do texto "corta" a linha de cor */
+    /* Rótulo do Setor integrado */
     .setor-label {
-        color: #90cdf4; 
-        font-size: 0.65rem; 
-        font-weight: 800;
-        text-transform: uppercase;
-        margin-bottom: -10px; /* Puxa o card para "dentro" do texto */
-        margin-left: 12px;
-        position: relative;
-        z-index: 99; 
-        background-color: #0b0e14; /* Cor do fundo da página para o efeito de corte */
-        padding: 0 5px;
-        display: inline-block;
-        letter-spacing: 0.5px;
+        color: #90cdf4; font-size: 0.6rem; font-weight: 800;
+        text-transform: uppercase; margin-bottom: -10px; margin-left: 10px;
+        position: relative; z-index: 99; background-color: #0b0e14;
+        padding: 0 5px; display: inline-block; letter-spacing: 1px;
     }
 
-    /* Animação EXCLUSIVA para a borda superior (Pisca sem contorno) */
-    @keyframes piscar-topo-apenas {
+    @keyframes piscar-linha {
         0% { border-top-color: #e74c3c; }
         50% { border-top-color: #1a1f29; }
         100% { border-top-color: #e74c3c; }
     }
 
     .card {
-        background-color: #1a1f29; 
-        padding: 6px 2px; 
-        border-radius: 2px;
-        text-align: center; 
-        margin-bottom: 0px; /* Elimina espaço extra entre linhas verticalmente */
-        min-height: 140px; 
-        border-top: 8px solid; 
-        display: flex; 
-        flex-direction: column;
-        justify-content: space-between;
-        border-right: 1px solid #232a37;
-        border-left: 1px solid #232a37;
-        border-bottom: 1px solid #232a37;
+        background-color: #1a1f29; border-radius: 4px;
+        text-align: center; margin-bottom: 5px; min-height: 150px;
+        border-top: 8px solid; border-right: 1px solid #232a37;
+        border-left: 1px solid #232a37; border-bottom: 1px solid #232a37;
+        display: flex; flex-direction: column; justify-content: space-around;
+        padding: 10px 5px;
     }
 
-    /* Gatilho para o pisca APENAS na linha superior */
-    .blink-top { 
-        animation: piscar-topo-apenas 0.8s infinite; 
-    }
+    .blink-top { animation: piscar-linha 0.8s infinite; }
 
-    .maquina-id { color: #90cdf4; font-size: 0.75em; font-weight: bold; opacity: 0.6; }
-    .maquina-nome { 
-        color: #ffffff; font-weight: 800; font-size: 0.85em; 
-        min-height: 38px; line-height: 1.1; 
-        display: flex; align-items: center; justify-content: center;
-    }
-    .status-texto { font-weight: 900; font-size: 1.05em; text-transform: uppercase; }
-    .texto-destaque { 
-        color: #a0aec0 !important; font-weight: bold; font-size: 0.7em; 
-        background: #232a37; border-radius: 2px; padding: 1px 0;
-    }
+    /* Tipografia sugerida: ID Grande e focado */
+    .id-destaque { color: #ffffff; font-size: 2.2rem; font-weight: 900; line-height: 1; margin: 5px 0; }
+    .nome-sub { color: #a0aec0; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+    .status-badge { font-weight: 900; font-size: 0.9rem; padding: 2px 8px; border-radius: 10px; }
     
-    /* Cabeçalho compactado ao máximo */
-    .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-    .kpi-unit { background: #1a1f29; padding: 2px 10px; border-radius: 4px; border: 1px solid #2d3748; display: flex; gap: 8px; align-items: center; }
+    /* Placar Superior */
+    .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .kpi-unit { background: #1a1f29; padding: 5px 15px; border-radius: 6px; border: 1px solid #2d3748; }
 
-    /* Ajuste para aproximar as colunas horizontalmente */
-    [data-testid="column"] { padding: 1px !important; }
+    [data-testid="column"] { padding: 2px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Definição de Dados
+# 2. Dados e Processamento (Mantendo sua estrutura)
 setores = {
     "PREPARAÇÃO": ["701", "1501", "1502", "1503", "1504", "1506"],
     "ACABAMENTO": ["804", "803", "1201", "_1202", "1404"],
@@ -91,7 +57,16 @@ setores = {
     "LOGÍSTICA": ["EMPILHADEIRA 26"]
 }
 
-# 3. Processamento
+# Dicionário de nomes para legenda menor
+nomes_curtos = {
+    "701": "BIANCO", "1501": "BRASTEC 1", "1502": "BRASTEC 2", "1503": "BRASTEC 3", 
+    "1504": "BRASTEC 4", "1506": "BRASTEC 6", "804": "ALBRECHT", "803": "LAFER",
+    "1201": "UNITECH", "_1202": "LK", "1404": "HIDRORELAX", "1601": "CORANTE",
+    "QUIMICO_1602": "QUÍMICO", "1306": "HT 1306", "1311": "HT 1311", "1314": "HT 1314",
+    "HT_1324": "HT 1324", "HT_1308": "HT 1308", "HT_1303": "HT 1303", "HT_1313": "HT 1313",
+    "1001": "FELP 1", "1002": "FELP 2", "2603": "SECADOR", "EMPILHADEIRA 26": "EMPILHA 26"
+}
+
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -106,49 +81,50 @@ for nome_setor, ids in setores.items():
     for i, id_maq in enumerate(ids):
         total += 1
         pos = string_bruta.rfind(id_maq)
-        status, cor, classe, s_nome = "NORMAL", "#2ecc71", "", "MANUTENÇÃO"
+        status, cor, classe, icon, s_nome = "NORMAL", "#2ecc71", "", "✅", "OPERANDO"
         
         if pos != -1:
             ctx = string_bruta[pos : pos + 80]
-            if "NORMAL" in ctx: status, cor = "NORMAL", "#2ecc71"
+            if "NORMAL" in ctx: pass
             elif any(x in ctx for x in ["CIVIL", "PARCIAL", "MÁQ.PAR.PARCIAL"]):
-                status, cor, parciais = "PARCIAL", "#f1c40f", parciais + 1
+                status, cor, icon, parciais = "AVISO", "#f1c40f", "⚠️", parciais + 1
             elif "PARADA" in ctx:
-                status, cor, classe, paradas = "PARADA", "#e74c3c", "blink-top", paradas + 1
+                status, cor, classe, icon, paradas = "PARADA", "#e74c3c", "blink-top", "🛑", paradas + 1
             
-            # Sub-status
             if "CIVIL" in ctx: s_nome = "CIVIL"
             elif "ELETRICA" in ctx: s_nome = "ELÉTRICA"
             elif "MECANICA" in ctx: s_nome = "MECÂNICA"
 
-        lista_final.append({"id": id_maq, "status": status, "cor": cor, "classe": classe, "setor": nome_setor, "s_nome": s_nome, "primeira": (i == 0)})
+        lista_final.append({
+            "id": id_maq.replace("_",""), "n": nomes_curtos.get(id_maq, "MAQ"), 
+            "status": status, "cor": cor, "classe": classe, "icon": icon,
+            "setor": nome_setor, "s_nome": s_nome, "primeira": (i == 0)
+        })
 
-# 4. Cabeçalho KPIs
+# 3. Renderização
 agora = datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
     <div class="kpi-row">
-        <div style="display: flex; gap: 8px;">
-            <div class="kpi-unit"><b style="color:#2ecc71;">{total-paradas-parciais}</b> <span style="color:#a0aec0; font-size:0.65em;">OK</span></div>
-            <div class="kpi-unit"><b style="color:#f1c40f;">{parciais}</b> <span style="color:#a0aec0; font-size:0.65em;">AVISO</span></div>
-            <div class="kpi-unit"><b style="color:#e74c3c;">{paradas}</b> <span style="color:#a0aec0; font-size:0.65em;">STOP</span></div>
+        <div style="display: flex; gap: 10px;">
+            <div class="kpi-unit"><b style="color:#2ecc71; font-size:1.2rem;">{total-paradas-parciais}</b> <small style="color:#a0aec0;">OK</small></div>
+            <div class="kpi-unit"><b style="color:#f1c40f; font-size:1.2rem;">{parciais}</b> <small style="color:#a0aec0;">AVISO</small></div>
+            <div class="kpi-unit"><b style="color:#e74c3c; font-size:1.2rem;">{paradas}</b> <small style="color:#a0aec0;">STOP</small></div>
         </div>
-        <div style="color: #90cdf4; font-weight: 800; font-size: 1.1em;">{agora}</div>
+        <div style="color: #90cdf4; font-weight: 800; font-size: 1.5rem;">{agora}</div>
     </div>
     """, unsafe_allow_html=True)
 
-# 5. Grid de 8 Colunas (Aproveitamento Total)
 cols = st.columns(8)
 for idx, m in enumerate(lista_final):
     with cols[idx % 8]:
-        # Título do Setor (visível apenas na primeira máquina de cada grupo)
-        label_html = f"<span class='setor-label'>{m['setor']}</span>" if m['primeira'] else "<span class='setor-label' style='color:transparent;'>.</span>"
-        
+        label = f"<span class='setor-label'>{m['setor']}</span>" if m['primeira'] else "<div style='height:14px;'></div>"
         st.markdown(f"""
-            {label_html}
+            {label}
             <div class="card {m['classe']}" style="border-top-color: {m['cor']};">
-                <div class="maquina-id">ID {m['id']}</div>
-                <div class="maquina-nome">MÁQUINA {m['id']}</div>
-                <div class="status-texto" style="color: {m['cor']};">{m['status']}</div>
-                <div class='texto-destaque'>{m['s_nome'] if m['status'] != 'NORMAL' else '✅ OPERANDO'}</div>
+                <div class="nome-sub">{m['n']}</div>
+                <div class="id-destaque">{m['id']}</div>
+                <div style="color: {m['cor']}; font-size: 1.1rem;">{m['icon']}</div>
+                <div class="status-badge" style="color: {m['cor']};">{m['status']}</div>
+                <div style="font-size:0.6rem; color:#a0aec0; font-weight:bold;">{m['s_nome']}</div>
             </div>
         """, unsafe_allow_html=True)
