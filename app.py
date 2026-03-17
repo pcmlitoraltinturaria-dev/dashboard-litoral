@@ -55,22 +55,23 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento
+# 4. Processamento com Janela de Corte Segura
 cols = st.columns(5)
 for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
     
     if pos != -1:
-        # Janela de leitura curtíssima (80 caracteres) para não "invadir" a máquina de baixo
-        ctx = string_bruta[pos : pos + 80]
+        # Reduzi a janela para 70 caracteres: espaço exato para ver o status da própria máquina
+        # sem alcançar a próxima linha do relatório de O.S.
+        ctx = string_bruta[pos : pos + 70]
         
-        # Define o setor presente APENAS no contexto da máquina
+        # Define o setor presente apenas no contexto curto
         setor = "MANUTENÇÃO"
         if "CIVIL" in ctx: setor = "CIVIL"
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # Lógica de Decisão (Prioridade para Status Real)
+        # Lógica de Decisão (Status PARADA tem prioridade se não for CIVIL)
         if "PARADA" in ctx and setor != "CIVIL":
             cor, lbl = "#e74c3c", "PARADA"
         elif setor == "CIVIL" or "PARCIAL" in ctx:
@@ -80,6 +81,7 @@ for i, at in enumerate(ativos):
         
         info = f"<div class='texto-destaque'>{setor if lbl != 'NORMAL' else '✅ OPERANDO'}</div>"
     else:
+        # Se a máquina não estiver no texto, ela está livre
         cor, lbl, info = "#2ecc71", "NORMAL", "<div class='texto-destaque'>✅ OPERANDO</div>"
 
     with cols[i % 5]:
