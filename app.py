@@ -61,7 +61,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos (Ajustada para os termos exatos do relatório)
+# 3. Lista de Ativos
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -77,48 +77,49 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento de Lógica e Exibição
+# 4. Processamento e Exibição
 cols = st.columns(5)
 
 for i, at in enumerate(ativos):
-    # Procura a posição da máquina no texto
     pos = string_bruta.rfind(at['id'])
     
-    # Se achou a máquina no relatório
+    # Se achou a máquina no texto
     if pos != -1:
-        # Pega apenas os 120 caracteres seguintes (impede ler a máquina de baixo)
-        ctx = string_bruta[pos : pos + 120]
+        # Janela de apenas 100 caracteres para evitar ler a máquina vizinha
+        ctx = string_bruta[pos : pos + 100]
         
-        # Identifica o setor dentro desse pequeno bloco
+        # Identificação de Setor
         if "CIVIL" in ctx: tipo_servico = "CIVIL"
         elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
         elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
         else: tipo_servico = "MANUTENÇÃO"
 
-        # Lógica de Cores por Prioridade
-        if tipo_servico == "CIVIL":
-            cor, lbl = "#f1c40f", "PARCIAL"  # Regra: Civil é sempre amarelo
-            info = f"<div class='texto-destaque'>{tipo_servico}</div>"
+        # --- NOVA LÓGICA DE PRIORIDADE ---
         
-        elif "PARADA" in ctx:
+        # 1. Se contém PARADA e NÃO é Civil -> VERMELHO (HT_1313 cairá aqui)
+        if "PARADA" in ctx and tipo_servico != "CIVIL":
             cor, lbl = "#e74c3c", "PARADA"
             info = f"<div class='texto-destaque'>{tipo_servico}</div>"
+        
+        # 2. Se for setor CIVIL -> AMARELO (HT_1324 cairá aqui)
+        elif tipo_servico == "CIVIL":
+            cor, lbl = "#f1c40f", "PARCIAL"
+            info = f"<div class='texto-destaque'>CIVIL</div>"
             
+        # 3. Se contém PARCIAL -> AMARELO (Rama LK cairá aqui)
         elif "PARCIAL" in ctx:
             cor, lbl = "#f1c40f", "PARCIAL"
             info = f"<div class='texto-destaque'>{tipo_servico}</div>"
             
+        # 4. Caso contrário -> VERDE
         else:
-            # Caso o nome esteja no relatório mas o status seja "Normal"
             cor, lbl = "#2ecc71", "NORMAL"
             info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
-    
     else:
-        # Máquina não encontrada no relatório (Está Livre)
+        # Máquina não está no relatório
         cor, lbl = "#2ecc71", "NORMAL"
         info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
 
-    # Renderização
     with cols[i % 5]:
         st.markdown(f"""
             <div class="card" style="border-top-color: {cor};">
