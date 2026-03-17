@@ -8,9 +8,15 @@ st.markdown("""
     <style>
     .stApp { background-color: #0e1117; }
     .card {
-        background-color: #1f2937; padding: 10px; border-radius: 5px;
-        text-align: center; margin-bottom: 8px; min-height: 145px; 
-        border-top: 6px solid; display: flex; flex-direction: column;
+        background-color: #1f2937;
+        padding: 10px;
+        border-radius: 5px;
+        text-align: center;
+        margin-bottom: 8px;
+        min-height: 145px; 
+        border-top: 6px solid;
+        display: flex;
+        flex-direction: column;
         justify-content: flex-start;
     }
     .maquina-id { 
@@ -24,7 +30,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Busca de Dados no Firebase
+# 2. Busca de Dados
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -34,7 +40,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos conforme o Monitor
+# 3. Lista de Ativos (Ordem do seu Dashboard)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -50,14 +56,16 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento de Lógica de Cor
+# 4. Processamento e Exibição
 cols = st.columns(5)
+
 for i, at in enumerate(ativos):
+    # Busca a posição da máquina (rfind pega a última atualização no log)
     pos = string_bruta.rfind(at['id'])
     
     if pos != -1:
-        # Janela curta para isolar a linha da O.S. (65 caracteres)
-        ctx = string_bruta[pos : pos + 65]
+        # Janela de contexto de 80 caracteres para isolar a linha da O.S.
+        ctx = string_bruta[pos : pos + 80]
         
         # Identificação de Setor
         setor = "MANUTENÇÃO"
@@ -65,16 +73,20 @@ for i, at in enumerate(ativos):
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # Lógica de Prioridade: Se houver indicação de Parcial, o Amarelo domina
-        if "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx or setor == "CIVIL":
+        # LÓGICA DE CORES SOLICITADA:
+        # CIVIL ou QUALQUER TIPO DE PARCIAL = AMARELO
+        if "CIVIL" in ctx or "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
             cor, lbl = "#f1c40f", "PARCIAL"
-        elif "PARADA" in ctx:
+        # PARADA TOTAL (Se não for parcial/civil) = VERMELHO
+        elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
             cor, lbl = "#e74c3c", "PARADA"
+        # RESTANTE (Incluindo status "NORMAL" do relatório) = VERDE
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
         info = f"<div class='texto-destaque'>{setor if lbl != 'NORMAL' else '✅ OPERANDO'}</div>"
     else:
+        # Se o ID não constar no relatório, a máquina está liberada
         cor, lbl, info = "#2ecc71", "NORMAL", "<div class='texto-destaque'>✅ OPERANDO</div>"
 
     with cols[i % 5]:
