@@ -1,25 +1,40 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo Reduzido
+# 1. Configuração de Layout e Estilo com Animação Intermitente
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; }
-    /* Ajuste do Card para tamanho reduzido */
+    
+    /* Animação para o status PARADA */
+    @keyframes piscar {
+        0% { opacity: 1; border-top-color: #e74c3c; }
+        50% { opacity: 0.5; border-top-color: transparent; }
+        100% { opacity: 1; border-top-color: #e74c3c; }
+    }
+
     .card {
         background-color: #1f2937; 
-        padding: 5px; /* Reduzido de 10px */
+        padding: 5px;
         border-radius: 4px;
         text-align: center; 
         margin-bottom: 5px; 
-        min-height: 100px; /* Reduzido de 145px */
-        border-top: 4px solid; /* Reduzido de 6px */
+        min-height: 100px;
+        border-top: 4px solid;
         display: flex; 
         flex-direction: column;
         justify-content: center;
+        transition: 0.3s;
     }
+
+    /* Classe que será aplicada apenas quando estiver PARADA */
+    .blink-red {
+        animation: piscar 1s infinite;
+        border-top: 5px solid #e74c3c !important;
+    }
+
     .maquina-id { 
         color: #e5e7eb; font-size: 0.75em; font-weight: bold; 
         background-color: #374151; border-radius: 2px;
@@ -30,14 +45,14 @@ st.markdown("""
         margin-bottom: 2px; line-height: 1;
     }
     .status-texto { 
-        font-weight: bold; font-size: 0.9em; /* Reduzido de 1.1em */
+        font-weight: bold; font-size: 0.9em; 
         text-transform: uppercase; margin-bottom: 1px; 
     }
     .texto-destaque { 
         color: #FFFFFF !important; font-weight: bold; font-size: 0.8em; 
         margin-top: 2px; 
     }
-    /* Ajuste de espaçamento entre colunas do Streamlit */
+
     [data-testid="column"] {
         padding-left: 3px !important;
         padding-right: 3px !important;
@@ -71,10 +86,13 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento e Exibição em 6 Colunas (para aproveitar o espaço reduzido)
-cols = st.columns(6) # Aumentado de 5 para 6 colunas
+# 4. Processamento e Exibição
+cols = st.columns(6)
 for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
+    
+    # Variável para controlar a animação
+    extra_class = ""
     
     if pos != -1:
         ctx = string_bruta[pos : pos + 80]
@@ -84,13 +102,13 @@ for i, at in enumerate(ativos):
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # Lógica de Cores com prioridade para NORMAL (Verde)
         if "NORMAL" in ctx:
             cor, lbl = "#2ecc71", "NORMAL"
         elif "CIVIL" in ctx or "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
             cor, lbl = "#f1c40f", "PARCIAL"
         elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
             cor, lbl = "#e74c3c", "PARADA"
+            extra_class = "blink-red" # Ativa a animação
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
@@ -100,7 +118,7 @@ for i, at in enumerate(ativos):
 
     with cols[i % 6]:
         st.markdown(f"""
-            <div class="card" style="border-top-color: {cor};">
+            <div class="card {extra_class}" style="border-top-color: {cor};">
                 <div class="maquina-id">ID: {at['id']}</div>
                 <div class="maquina-nome">{at['n']}</div>
                 <div class="status-texto" style="color: {cor};">{lbl}</div>
