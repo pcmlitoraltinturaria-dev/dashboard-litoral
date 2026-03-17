@@ -17,18 +17,17 @@ st.markdown("""
     }
     .stApp { background-color: #0b0e14; overflow: hidden; }
     
-    /* ANIMAÇÃO VERMELHA: Pisca clássico */
+    /* ANIMAÇÃO VERMELHA: Pisca */
     @keyframes piscar-topo {
         0% { border-top-color: #e74c3c; }
         50% { border-top-color: #1a1f29; }
         100% { border-top-color: #e74c3c; }
     }
 
-    /* ANIMAÇÃO AMARELA: Movimento Circular/Fluxo */
+    /* ANIMAÇÃO AMARELA: Fluxo Neon Vibrante */
     @keyframes fluxo-circular {
         0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
+        100% { background-position: 200% 50%; }
     }
 
     .card {
@@ -38,7 +37,7 @@ st.markdown("""
         text-align: center; 
         margin-bottom: 5px; 
         min-height: 155px; 
-        border-top: 8px solid; /* Base da borda */
+        border-top: 8px solid;
         display: flex; 
         flex-direction: column;
         justify-content: space-between;
@@ -51,15 +50,16 @@ st.markdown("""
     /* Classe para Vermelho (PARADA) */
     .blink-top { animation: piscar-topo 0.8s infinite; }
 
-    /* Classe para Amarelo (AVISO/CIRCULAR) */
+    /* Classe para Amarelo (AVISO com #eaff00) */
     .flow-top { 
         border-top: 8px solid transparent !important;
+        /* Gradiente entre o amarelo padrão e o amarelo-limão vibrante solicitado */
         background-image: linear-gradient(#1a1f29, #1a1f29), 
-                          linear-gradient(90deg, #f1c40f, #8e6e00, #f1c40f);
+                          linear-gradient(90deg, #f1c40f, #eaff00, #f1c40f);
         background-origin: border-box;
         background-clip: padding-box, border-box;
         background-size: 200% 100%;
-        animation: fluxo-circular 2s linear infinite;
+        animation: fluxo-circular 1.5s linear infinite;
     }
 
     .id-container { color: #ffffff; line-height: 1; margin: 5px 0; }
@@ -80,7 +80,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Lista de Ativos
+# 2. Ativos e Processamento (Mesma lógica anterior)
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -101,7 +101,6 @@ def formatar_id_visual(id_bruto):
         return f'<span class="id-letras">{letras}</span><span class="id-numeros">{numeros}</span>'
     return f'<span class="id-numeros">{limpo}</span>'
 
-# 3. Integração e Status
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -134,7 +133,7 @@ for at in ativos:
         "classe": classe, "icon": icon, "s_nome": s_nome
     })
 
-# 4. Interface
+# 4. Interface Final
 agora = datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
     <div class="kpi-row">
