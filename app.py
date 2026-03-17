@@ -1,28 +1,36 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo Profissional
+# Configuração da página para usar toda a largura disponível
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
     <style>
+    /* Remove as margens e paddings padrões do Streamlit para ganhar espaço */
+    .block-container {
+        padding-top: 1rem !important;
+        padding-bottom: 0rem !important;
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
     .stApp { background-color: #0b0e14; }
     
-    /* Animação Crítica para PARADA */
+    /* Animação para status PARADA */
     @keyframes piscar-critico {
-        0% { opacity: 1; border-top-color: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
+        0% { opacity: 1; border-top-color: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
         50% { opacity: 0.5; border-top-color: transparent; box-shadow: none; }
-        100% { opacity: 1; border-top-color: #e74c3c; box-shadow: 0 0 10px #e74c3c; }
+        100% { opacity: 1; border-top-color: #e74c3c; box-shadow: 0 0 8px #e74c3c; }
     }
 
+    /* Card ultra-compacto conforme o recuadro vermelho solicitado */
     .card {
         background-color: #1a1f29; 
-        padding: 8px;
-        border-radius: 6px;
+        padding: 4px;
+        border-radius: 4px;
         text-align: center; 
-        margin-bottom: 6px; 
-        min-height: 110px;
-        border-top: 5px solid;
+        min-height: 90px; /* Altura reduzida para caber na vertical */
+        border-top: 4px solid;
         display: flex; 
         flex-direction: column;
         justify-content: space-between;
@@ -31,36 +39,37 @@ st.markdown("""
         border-bottom: 1px solid #2d3748;
     }
 
-    /* Classe para PARADA */
     .blink-red { 
         animation: piscar-critico 1s infinite; 
         background-color: #2d1616 !important; 
     }
 
     .maquina-id { 
-        color: #90cdf4; font-size: 0.75em; font-weight: bold; 
-        letter-spacing: 1px; margin-bottom: 4px;
+        color: #90cdf4; font-size: 0.7em; font-weight: bold; 
+        margin-bottom: 2px;
     }
     .maquina-nome { 
-        color: #ffffff; font-weight: 800; font-size: 0.85em; 
-        margin-bottom: 5px; line-height: 1.1;
-        min-height: 32px; display: flex; align-items: center; justify-content: center;
+        color: #ffffff; font-weight: 700; font-size: 0.8em; 
+        line-height: 1; min-height: 24px;
+        display: flex; align-items: center; justify-content: center;
     }
     .status-texto { 
-        font-weight: 900; font-size: 1em; 
-        text-transform: uppercase; margin-bottom: 2px; 
+        font-weight: 800; font-size: 0.9em; 
+        text-transform: uppercase;
     }
     .texto-destaque { 
-        color: #a0aec0 !important; font-weight: bold; font-size: 0.75em; 
-        background: #2d3748; border-radius: 4px; padding: 2px 0;
+        color: #a0aec0 !important; font-weight: bold; font-size: 0.7em; 
+        background: #2d3748; border-radius: 3px; padding: 1px 0;
     }
 
-    /* Ajuste de colunas */
-    [data-testid="column"] { padding: 2px !important; }
+    /* Reduz o espaço entre as colunas do Streamlit */
+    [data-testid="column"] { 
+        padding: 1px !important; 
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Busca de Dados
+# Lógica de busca e lista de ativos permanece a mesma
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -70,7 +79,6 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -86,7 +94,7 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento e Exibição em 6 Colunas
+# Exibição em 6 colunas para garantir que caiba na largura da tela
 cols = st.columns(6)
 for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
@@ -94,7 +102,6 @@ for i, at in enumerate(ativos):
     
     if pos != -1:
         ctx = string_bruta[pos : pos + 80]
-        
         setor = "MANUTENÇÃO"
         if "CIVIL" in ctx: setor = "CIVIL"
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
