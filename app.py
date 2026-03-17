@@ -2,47 +2,52 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-# 1. Configuração de Layout
-st.set_page_config(page_title="Central de Monitoramento Litoral", layout="wide")
+# 1. Configuração de Layout para Tela Única
+st.set_page_config(page_title="Central Litoral", layout="wide")
 
 st.markdown("""
     <style>
-    .stApp { background-color: #0b0e14; }
-    .block-container { padding-top: 1.5rem !important; }
+    /* Força o conteúdo a ocupar o topo e remove scrolls desnecessários */
+    .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
+    .stApp { background-color: #0b0e14; overflow: hidden; }
     
+    /* Cabeçalho de Setor mais fino */
     .setor-header {
-        color: #90cdf4; font-size: 1.1rem; font-weight: bold;
-        border-bottom: 2px solid #2d3748; margin: 15px 0 8px 0;
-        padding-bottom: 3px; text-transform: uppercase; letter-spacing: 1px;
+        color: #90cdf4; font-size: 0.9rem; font-weight: bold;
+        border-bottom: 1px solid #2d3748; margin: 8px 0 4px 0;
+        text-transform: uppercase; letter-spacing: 1px;
     }
 
-    @keyframes piscar-critico {
-        0% { opacity: 1; border-top-color: #e74c3c; box-shadow: 0 0 12px #e74c3c; }
-        50% { opacity: 0.5; border-top-color: transparent; box-shadow: none; }
-        100% { opacity: 1; border-top-color: #e74c3c; box-shadow: 0 0 12px #e74c3c; }
+    /* Animação APENAS para a borda superior */
+    @keyframes piscar-borda {
+        0% { border-top-color: #e74c3c; box-shadow: 0 -4px 8px -2px rgba(231, 76, 60, 0.5); }
+        50% { border-top-color: #374151; box-shadow: none; }
+        100% { border-top-color: #e74c3c; box-shadow: 0 -4px 8px -2px rgba(231, 76, 60, 0.5); }
     }
 
     .card {
-        background-color: #1a1f29; padding: 8px; border-radius: 6px;
-        text-align: center; margin-bottom: 6px; min-height: 110px;
+        background-color: #1a1f29; padding: 5px; border-radius: 4px;
+        text-align: center; margin-bottom: 4px; 
+        min-height: 85px; /* Altura reduzida para caber tudo na janela */
         border-top: 5px solid; display: flex; flex-direction: column;
         justify-content: space-between; border-right: 1px solid #2d3748;
         border-left: 1px solid #2d3748; border-bottom: 1px solid #2d3748;
     }
 
-    .blink-red { animation: piscar-critico 1s infinite; background-color: #2d1616 !important; }
+    /* Aplica animação apenas na borda superior se estiver PARADA */
+    .blink-top { animation: piscar-borda 0.8s infinite; }
 
-    .maquina-id { color: #90cdf4; font-size: 0.7em; font-weight: bold; }
-    .maquina-nome { color: #ffffff; font-weight: 800; font-size: 0.8em; min-height: 28px; display: flex; align-items: center; justify-content: center; }
-    .status-texto { font-weight: 900; font-size: 0.9em; text-transform: uppercase; }
-    .texto-destaque { color: #a0aec0 !important; font-weight: bold; font-size: 0.7em; background: #2d3748; border-radius: 4px; padding: 1px 0; }
+    .maquina-id { color: #90cdf4; font-size: 0.65em; font-weight: bold; }
+    .maquina-nome { color: #ffffff; font-weight: 700; font-size: 0.75em; min-height: 22px; line-height: 1.1; display: flex; align-items: center; justify-content: center; }
+    .status-texto { font-weight: 800; font-size: 0.85em; text-transform: uppercase; }
+    .texto-destaque { color: #a0aec0 !important; font-weight: bold; font-size: 0.65em; background: #2d3748; border-radius: 3px; }
     
-    .kpi-box { text-align: center; background: #1a1f29; padding: 8px; border-radius: 8px; border: 1px solid #2d3748; min-width: 120px; }
-    [data-testid="column"] { padding: 2px !important; }
+    .kpi-box { text-align: center; background: #1a1f29; padding: 5px 10px; border-radius: 6px; border: 1px solid #2d3748; }
+    [data-testid="column"] { padding: 1px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Definição dos Setores (IMPORTANTE: Deve vir antes do processamento)
+# 2. Definição dos Setores
 setores = {
     "🛠️ PREPARAÇÃO": [
         {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
@@ -79,7 +84,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 4. Processamento de Status
+# 4. Processamento
 total, paradas, parciais = 0, 0, 0
 lista_final = []
 
@@ -95,54 +100,44 @@ for nome_setor, ativos_do_setor in setores.items():
             elif "ELETRICA" in ctx: s_nome = "ELÉTRICA"
             elif "MECANICA" in ctx: s_nome = "MECÂNICA"
 
-            if "NORMAL" in ctx: 
-                status, cor = "NORMAL", "#2ecc71"
+            if "NORMAL" in ctx: status, cor = "NORMAL", "#2ecc71"
             elif any(x in ctx for x in ["CIVIL", "PARCIAL", "MÁQ.PAR.PARCIAL"]):
                 status, cor = "PARCIAL", "#f1c40f"
                 parciais += 1
             elif "PARADA" in ctx:
-                status, cor, classe = "PARADA", "#e74c3c", "blink-red"
+                status, cor, classe = "PARADA", "#e74c3c", "blink-top"
                 paradas += 1
         
-        # Unir dados da máquina com status processado
-        dados_maquina = at.copy()
-        dados_maquina.update({
-            "status": status, "cor": cor, "classe": classe, 
-            "setor_pai": nome_setor, "s_nome": s_nome
-        })
-        lista_final.append(dados_maquina)
+        m = at.copy()
+        m.update({"status": status, "cor": cor, "classe": classe, "setor_pai": nome_setor, "s_nome": s_nome})
+        lista_final.append(m)
 
-# 5. Cabeçalho (KPIs e Relógio)
+# 5. Cabeçalho Compacto
 agora = datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <div style="display: flex; gap: 10px;">
-            <div class="kpi-box"><span style="color:#a0aec0; font-size:0.7em;">TOTAL</span><br><b style="font-size:1.2em; color:white;">{total}</b></div>
-            <div class="kpi-box"><span style="color:#2ecc71; font-size:0.7em;">OPERANDO</span><br><b style="font-size:1.2em; color:#2ecc71;">{total-paradas-parciais}</b></div>
-            <div class="kpi-box"><span style="color:#f1c40f; font-size:0.7em;">ATENÇÃO</span><br><b style="font-size:1.2em; color:#f1c40f;">{parciais}</b></div>
-            <div class="kpi-box"><span style="color:#e74c3c; font-size:0.7em;">PARADAS</span><br><b style="font-size:1.2em; color:#e74c3c;">{paradas}</b></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+        <div style="display: flex; gap: 8px;">
+            <div class="kpi-box"><b style="color:#2ecc71;">{total-paradas-parciais}</b> <span style="color:#a0aec0; font-size:0.7em;">OK</span></div>
+            <div class="kpi-box"><b style="color:#f1c40f;">{parciais}</b> <span style="color:#a0aec0; font-size:0.7em;">AVISO</span></div>
+            <div class="kpi-box"><b style="color:#e74c3c;">{paradas}</b> <span style="color:#a0aec0; font-size:0.7em;">STOP</span></div>
         </div>
-        <div class="kpi-box" style="border-color: #90cdf4;">
-            <span style="color:#90cdf4; font-size:0.7em;">HORÁRIO</span><br><b style="font-size:1.2em; color:white;">{agora}</b>
-        </div>
+        <div style="color: #90cdf4; font-weight: bold; font-size: 1.1em;">{agora}</div>
     </div>
     """, unsafe_allow_html=True)
 
-# 6. Exibição por Setores
+# 6. Renderização por Setores
 for nome_setor in setores.keys():
     st.markdown(f"<div class='setor-header'>{nome_setor}</div>", unsafe_allow_html=True)
-    cols = st.columns(6)
+    cols = st.columns(9) # Aumentado para 9 colunas para achatar os grupos
+    maquinas = [m for m in lista_final if m['setor_pai'] == nome_setor]
     
-    # Filtra máquinas deste setor específico
-    maquinas_setor = [m for m in lista_final if m['setor_pai'] == nome_setor]
-    
-    for idx, m in enumerate(maquinas_setor):
-        with cols[idx % 6]:
+    for idx, m in enumerate(maquinas):
+        with cols[idx % 9]:
             st.markdown(f"""
                 <div class="card {m['classe']}" style="border-top-color: {m['cor']};">
                     <div class="maquina-id">{m['id']}</div>
                     <div class="maquina-nome">{m['n']}</div>
                     <div class="status-texto" style="color: {m['cor']};">{m['status']}</div>
-                    <div class='texto-destaque'>{m['s_nome'] if m['status'] != 'NORMAL' else '✅ OPERANDO'}</div>
+                    <div class='texto-destaque'>{m['s_nome'] if m['status'] != 'NORMAL' else '✅'}</div>
                 </div>
             """, unsafe_allow_html=True)
