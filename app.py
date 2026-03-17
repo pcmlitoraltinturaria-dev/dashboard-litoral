@@ -24,7 +24,7 @@ st.markdown("""
         100% { border-top-color: #e74c3c; }
     }
 
-    /* ANIMAÇÃO AMARELA: Fluxo Neon Vibrante */
+    /* ANIMAÇÃO AMARELA: Fluxo Neon Vibrante sobre Amarelo Base */
     @keyframes fluxo-circular {
         0% { background-position: 0% 50%; }
         100% { background-position: 200% 50%; }
@@ -50,10 +50,10 @@ st.markdown("""
     /* Classe para Vermelho (PARADA) */
     .blink-top { animation: piscar-topo 0.8s infinite; }
 
-    /* Classe para Amarelo (AVISO com #eaff00) */
+    /* Classe para Amarelo (Fluxo solicitado) */
     .flow-top { 
         border-top: 8px solid transparent !important;
-        /* Gradiente entre o amarelo padrão e o amarelo-limão vibrante solicitado */
+        /* Gradiente: Amarelo Base (#f1c40f) -> Neon (#eaff00) -> Amarelo Base (#f1c40f) */
         background-image: linear-gradient(#1a1f29, #1a1f29), 
                           linear-gradient(90deg, #f1c40f, #eaff00, #f1c40f);
         background-origin: border-box;
@@ -62,6 +62,7 @@ st.markdown("""
         animation: fluxo-circular 1.5s linear infinite;
     }
 
+    /* Tipografia de IDs */
     .id-container { color: #ffffff; line-height: 1; margin: 5px 0; }
     .id-letras { font-size: 1.1rem; font-weight: 700; vertical-align: baseline; opacity: 0.8; margin-right: 2px; }
     .id-numeros { font-size: 2.7rem; font-weight: 900; vertical-align: baseline; }
@@ -73,6 +74,7 @@ st.markdown("""
         background: #232a37; border-radius: 3px; padding: 2px 0;
     }
     
+    /* KPI Bar */
     .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .kpi-unit { background: #1a1f29; padding: 4px 12px; border-radius: 6px; border: 1px solid #2d3748; display: flex; gap: 8px; align-items: center; }
 
@@ -80,7 +82,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Ativos e Processamento (Mesma lógica anterior)
+# 2. Ativos (Mantendo a lista conforme as instruções anteriores)
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -92,6 +94,7 @@ ativos = [
     {"id": "1002", "n": "FELP 2"}, {"id": "2603", "n": "SECADOR"}, {"id": "EMPILHADEIRA 26", "n": "EMPILHA 26"}
 ]
 
+# Formatação visual dos IDs
 def formatar_id_visual(id_bruto):
     limpo = id_bruto.replace("_", "").replace("EMPILHADEIRA ", "").replace("QUIMICO", "")
     match = re.match(r"([a-zA-Z]+)?(\d+)", limpo)
@@ -109,7 +112,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 total, paradas, parciais = 0, 0, 0
-lista_processada = []
+lista_final = []
 
 for at in ativos:
     total += 1
@@ -127,13 +130,13 @@ for at in ativos:
         elif "ELETRICA" in ctx: s_nome = "ELÉTRICA"
         elif "MECANICA" in ctx: s_nome = "MECÂNICA"
 
-    lista_processada.append({
+    lista_final.append({
         "id_html": formatar_id_visual(at['id']),
         "n": at['n'], "status": status, "cor": cor, 
         "classe": classe, "icon": icon, "s_nome": s_nome
     })
 
-# 4. Interface Final
+# 3. Cabeçalho e Grid
 agora = datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
     <div class="kpi-row">
@@ -147,7 +150,7 @@ st.markdown(f"""
     """, unsafe_allow_html=True)
 
 cols = st.columns(8)
-for idx, m in enumerate(lista_processada):
+for idx, m in enumerate(lista_final):
     with cols[idx % 8]:
         st.markdown(f"""
             <div class="card {m['classe']}" style="border-top-color: {m['cor']};">
