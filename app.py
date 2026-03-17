@@ -1,8 +1,9 @@
 import streamlit as st
 import requests
 from datetime import datetime
+import re
 
-# 1. Configuração de Layout - Grade Limpa e Contínua
+# 1. Configuração de Layout
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
 st.markdown("""
@@ -16,7 +17,6 @@ st.markdown("""
     }
     .stApp { background-color: #0b0e14; overflow: hidden; }
     
-    /* Animação EXCLUSIVA para a borda superior vermelha */
     @keyframes piscar-topo {
         0% { border-top-color: #e74c3c; }
         50% { border-top-color: #1a1f29; }
@@ -25,11 +25,11 @@ st.markdown("""
 
     .card {
         background-color: #1a1f29; 
-        padding: 12px 5px; 
+        padding: 10px 5px; 
         border-radius: 4px;
         text-align: center; 
-        margin-bottom: 8px; 
-        min-height: 160px; /* Altura para preencher bem a tela em 3 linhas */
+        margin-bottom: 5px; 
+        min-height: 155px; 
         border-top: 8px solid; 
         display: flex; 
         flex-direction: column;
@@ -41,24 +41,26 @@ st.markdown("""
 
     .blink-top { animation: piscar-topo 0.8s infinite; }
 
-    /* Design Moderno: Foco no ID */
-    .id-grande { color: #ffffff; font-size: 2.5rem; font-weight: 900; line-height: 1; margin: 5px 0; }
-    .nome-maquina { color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    /* Estilo para o ID com letras menores */
+    .id-container { color: #ffffff; line-height: 1; margin: 5px 0; }
+    .id-letras { font-size: 1.2rem; font-weight: 700; vertical-align: middle; opacity: 0.8; }
+    .id-numeros { font-size: 2.6rem; font-weight: 900; vertical-align: middle; }
+    
+    .nome-maquina { color: #a0aec0; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; }
     .status-texto { font-weight: 900; font-size: 1rem; text-transform: uppercase; }
     .tag-manutencao { 
         color: #a0aec0 !important; font-weight: bold; font-size: 0.75rem; 
         background: #232a37; border-radius: 3px; padding: 2px 0;
     }
     
-    /* Placar Superior */
-    .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .kpi-unit { background: #1a1f29; padding: 5px 15px; border-radius: 6px; border: 1px solid #2d3748; display: flex; gap: 10px; align-items: center; }
+    .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .kpi-unit { background: #1a1f29; padding: 4px 12px; border-radius: 6px; border: 1px solid #2d3748; display: flex; gap: 8px; align-items: center; }
 
-    [data-testid="column"] { padding: 3px !important; }
+    [data-testid="column"] { padding: 2px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Lista de Ativos (Ordem sequencial)
+# 2. Lista de Ativos
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -70,7 +72,20 @@ ativos = [
     {"id": "1002", "n": "FELP 2"}, {"id": "2603", "n": "SECADOR"}, {"id": "EMPILHADEIRA 26", "n": "EMPILHA 26"}
 ]
 
-# 3. Busca de Dados
+# Função para formatar o ID (ex: HT1324 -> <small>HT</small>1324)
+def formatar_id_visual(id_bruto):
+    # Remove underscores e nomes como "QUIMICO" ou "EMPILHADEIRA"
+    # Foca em extrair a parte HT e a parte numérica
+    limpo = id_bruto.replace("_", "").replace("EMPILHADEIRA ", "").replace("QUIMICO", "")
+    
+    match = re.match(r"([a-zA-Z]+)?(\d+)", limpo)
+    if match:
+        letras = match.group(1) if match.group(1) else ""
+        numeros = match.group(2)
+        return f'<span class="id-letras">{letras}</span><span class="id-numeros">{numeros}</span>'
+    return f'<span class="id-numeros">{limpo}</span>'
+
+# 3. Lógica de Busca e Processamento
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -98,7 +113,7 @@ for at in ativos:
         elif "MECANICA" in ctx: s_nome = "MECÂNICA"
 
     lista_processada.append({
-        "id": at['id'].replace("_","").replace("EMPILHADEIRA ",""), 
+        "id_html": formatar_id_visual(at['id']),
         "n": at['n'], "status": status, "cor": cor, 
         "classe": classe, "icon": icon, "s_nome": s_nome
     })
@@ -107,23 +122,23 @@ for at in ativos:
 agora = datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
     <div class="kpi-row">
-        <div style="display: flex; gap: 12px;">
-            <div class="kpi-unit"><b style="color:#2ecc71; font-size:1.4em;">{total-paradas-parciais}</b> <small style="color:#a0aec0; font-weight:bold;">OK</small></div>
-            <div class="kpi-unit"><b style="color:#f1c40f; font-size:1.4em;">{parciais}</b> <small style="color:#a0aec0; font-weight:bold;">AVISO</small></div>
-            <div class="kpi-unit"><b style="color:#e74c3c; font-size:1.4em;">{paradas}</b> <small style="color:#a0aec0; font-weight:bold;">STOP</small></div>
+        <div style="display: flex; gap: 10px;">
+            <div class="kpi-unit"><b style="color:#2ecc71; font-size:1.2rem;">{total-paradas-parciais}</b> <small style="color:#a0aec0;">OK</small></div>
+            <div class="kpi-unit"><b style="color:#f1c40f; font-size:1.2rem;">{parciais}</b> <small style="color:#a0aec0;">AVISO</small></div>
+            <div class="kpi-unit"><b style="color:#e74c3c; font-size:1.2rem;">{paradas}</b> <small style="color:#a0aec0;">STOP</small></div>
         </div>
-        <div style="color: #90cdf4; font-weight: 900; font-size: 1.8em;">{agora}</div>
+        <div style="color: #90cdf4; font-weight: 800; font-size: 1.5rem;">{agora}</div>
     </div>
     """, unsafe_allow_html=True)
 
-# 5. Renderização em Grade (8 colunas)
+# 5. Grid (8 colunas)
 cols = st.columns(8)
 for idx, m in enumerate(lista_processada):
     with cols[idx % 8]:
         st.markdown(f"""
             <div class="card {m['classe']}" style="border-top-color: {m['cor']};">
                 <div class="nome-maquina">{m['n']}</div>
-                <div class="id-grande">{m['id']}</div>
+                <div class="id-container">{m['id_html']}</div>
                 <div class="status-texto" style="color: {m['cor']};">{m['icon']} {m['status']}</div>
                 <div class="tag-manutencao">{m['s_nome'] if m['status'] != 'NORMAL' else 'EM OPERAÇÃO'}</div>
             </div>
