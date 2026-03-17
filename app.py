@@ -7,7 +7,6 @@ st.set_page_config(page_title="Central Litoral", layout="wide")
 
 st.markdown("""
     <style>
-    /* Remove margens laterais e superiores do Streamlit */
     .block-container { 
         padding-top: 1rem !important; 
         padding-bottom: 0rem !important; 
@@ -15,13 +14,19 @@ st.markdown("""
         padding-right: 0.5rem !important; 
         max-width: 100% !important;
     }
-    .stApp { background-color: #0b0e14; overflow: hidden; }
+    .stApp { background-color: #0b0e14; overflow-x: hidden; }
     
-    /* Títulos de Setor compactos */
-    .setor-header {
-        color: #90cdf4; font-size: 0.85rem; font-weight: bold;
-        border-left: 4px solid #90cdf4; margin: 10px 0 5px 0;
-        padding-left: 8px; text-transform: uppercase; background: #1a1f29;
+    /* Etiqueta de Setor acima da máquina */
+    .setor-label {
+        color: #90cdf4; 
+        font-size: 0.65rem; 
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+        display: block;
+        text-align: left;
+        white-space: nowrap;
+        letter-spacing: 0.5px;
     }
 
     /* Animação APENAS para a LINHA SUPERIOR (Borda) */
@@ -36,18 +41,17 @@ st.markdown("""
         padding: 6px 2px; 
         border-radius: 4px;
         text-align: center; 
-        margin-bottom: 4px; 
-        min-height: 110px; /* Altura mantida para leitura boa */
-        border-top: 6px solid; /* Linha de cima mais grossa para destacar o pisca */
+        min-height: 105px; 
+        border-top: 6px solid;
         display: flex; 
         flex-direction: column;
         justify-content: space-between;
         border-right: 1px solid #232a37;
         border-left: 1px solid #232a37;
         border-bottom: 1px solid #232a37;
+        transition: 0.3s;
     }
 
-    /* Classe aplicada apenas quando o status é PARADA */
     .blink-top-only { animation: piscar-linha 0.8s infinite; }
 
     .maquina-id { color: #90cdf4; font-size: 0.7em; font-weight: bold; }
@@ -63,39 +67,35 @@ st.markdown("""
     }
     
     /* Placar Superior */
-    .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .kpi-unit { background: #1a1f29; padding: 4px 12px; border-radius: 5px; border: 1px solid #2d3748; display: flex; gap: 10px; align-items: center; }
+    .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .kpi-unit { background: #1a1f29; padding: 4px 12px; border-radius: 5px; border: 1px solid #2d3748; display: flex; gap: 8px; align-items: center; }
 
-    [data-testid="column"] { padding: 1px !important; }
+    [data-testid="column"] { padding: 2px !important; }
+
+    /* Espaçador entre setores na mesma linha */
+    .spacer-setor { margin-left: 15px !important; }
     </style>
     """, unsafe_allow_html=True)
 
 # 2. Definição dos Setores
 setores = {
-    "🛠️ PREPARAÇÃO": [
-        {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
-        {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
-        {"id": "1504", "n": "ABRIDOR BRASTEC 4"}, {"id": "1506", "n": "ABRIDOR BRASTEC 6"}
-    ],
-    "🔥 ACABAMENTO": [
-        {"id": "804", "n": "CALANDRA ALBRECHT"}, {"id": "803", "n": "CALANDRA LAFER"},
-        {"id": "1201", "n": "RAMA UNITECH"}, {"id": "_1202", "n": "RAMA LK"},
-        {"id": "1404", "n": "HIDRORELAXADORA"}
-    ],
-    "🧪 TINTURARIA": [
-        {"id": "1601", "n": "COZINHA CORANTE"}, {"id": "QUIMICO_1602", "n": "COZINHA QUÍMICO"},
-        {"id": "1306", "n": "HT 1306"}, {"id": "1311", "n": "HT 1311"},
-        {"id": "1314", "n": "HT 1314"}, {"id": "HT_1324", "n": "HT 1324"},
-        {"id": "HT_1308", "n": "HT 1308"}, {"id": "HT_1303", "n": "HT 1303"},
-        {"id": "HT_1313", "n": "HT 1313"}
-    ],
-    "💨 SECAGEM E FELPAGEM": [
-        {"id": "1001", "n": "FELPADEIRA 1"}, {"id": "1002", "n": "FELPADEIRA 2"},
-        {"id": "2603", "n": "SECADOR"}
-    ],
-    "📦 LOGÍSTICA": [
-        {"id": "EMPILHADEIRA 26", "n": "EMPILHADEIRA 26"}
-    ]
+    "PREPARAÇÃO": ["701", "1501", "1502", "1503", "1504", "1506"],
+    "ACABAMENTO": ["804", "803", "1201", "_1202", "1404"],
+    "TINTURARIA": ["1601", "QUIMICO_1602", "1306", "1311", "1314", "HT_1324", "HT_1308", "HT_1303", "HT_1313"],
+    "SECAGEM/FELPAGEM": ["1001", "1002", "2603"],
+    "LOGÍSTICA": ["EMPILHADEIRA 26"]
+}
+
+# Nomes amigáveis
+nomes_maquinas = {
+    "701": "ABRIDOR BIANCO", "1501": "ABRIDOR BRASTEC 1", "1502": "ABRIDOR BRASTEC 2",
+    "1503": "ABRIDOR BRASTEC 3", "1504": "ABRIDOR BRASTEC 4", "1506": "ABRIDOR BRASTEC 6",
+    "804": "CALANDRA ALBRECHT", "803": "CALANDRA LAFER", "1201": "RAMA UNITECH",
+    "_1202": "RAMA LK", "1404": "HIDRORELAXADORA", "1601": "COZINHA CORANTE",
+    "QUIMICO_1602": "COZINHA QUÍMICO", "1306": "HT 1306", "1311": "HT 1311",
+    "1314": "HT 1314", "HT_1324": "HT 1324", "HT_1308": "HT 1308", "HT_1303": "HT 1303",
+    "HT_1313": "HT 1313", "1001": "FELPADEIRA 1", "1002": "FELPADEIRA 2",
+    "2603": "SECADOR", "EMPILHADEIRA 26": "EMPILHADEIRA 26"
 }
 
 # 3. Busca e Processamento
@@ -108,12 +108,13 @@ def buscar_dados():
 string_bruta = buscar_dados()
 
 total, paradas, parciais = 0, 0, 0
-lista_final = []
+lista_maquinas_final = []
 
-for nome_setor, ativos_do_setor in setores.items():
-    for at in ativos_do_setor:
+# Criar lista única mantendo a ordem dos setores
+for nome_setor, ids in setores.items():
+    for i, id_maq in enumerate(ids):
         total += 1
-        pos = string_bruta.rfind(at['id'])
+        pos = string_bruta.rfind(id_maq)
         status, cor, classe, s_nome = "NORMAL", "#2ecc71", "", "MANUTENÇÃO"
         
         if pos != -1:
@@ -128,36 +129,38 @@ for nome_setor, ativos_do_setor in setores.items():
             elif "PARADA" in ctx:
                 status, cor, classe, paradas = "PARADA", "#e74c3c", "blink-top-only", paradas + 1
         
-        m = at.copy()
-        m.update({"status": status, "cor": cor, "classe": classe, "setor_pai": nome_setor, "s_nome": s_nome})
-        lista_final.append(m)
+        lista_maquinas_final.append({
+            "id": id_maq, "n": nomes_maquinas[id_maq], "status": status, 
+            "cor": cor, "classe": classe, "setor": nome_setor, 
+            "s_nome": s_nome, "primeira_do_setor": (i == 0)
+        })
 
-# 4. Cabeçalho KPIs
+# 4. Cabeçalho
 agora = datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
     <div class="kpi-row">
         <div style="display: flex; gap: 10px;">
-            <div class="kpi-unit"><b style="color:#2ecc71; font-size:1.2em;">{total-paradas-parciais}</b> <span style="color:#a0aec0; font-size:0.8em;">OPERANDO</span></div>
-            <div class="kpi-unit"><b style="color:#f1c40f; font-size:1.2em;">{parciais}</b> <span style="color:#a0aec0; font-size:0.8em;">ATENÇÃO</span></div>
-            <div class="kpi-unit"><b style="color:#e74c3c; font-size:1.2em;">{paradas}</b> <span style="color:#a0aec0; font-size:0.8em;">PARADAS</span></div>
+            <div class="kpi-unit"><b style="color:#2ecc71; font-size:1.1em;">{total-paradas-parciais}</b> <span style="color:#a0aec0; font-size:0.7em;">OK</span></div>
+            <div class="kpi-unit"><b style="color:#f1c40f; font-size:1.1em;">{parciais}</b> <span style="color:#a0aec0; font-size:0.7em;">AVISO</span></div>
+            <div class="kpi-unit"><b style="color:#e74c3c; font-size:1.1em;">{paradas}</b> <span style="color:#a0aec0; font-size:0.7em;">STOP</span></div>
         </div>
-        <div style="color: #90cdf4; font-weight: bold; font-size: 1.3em; background: #1a1f29; padding: 4px 15px; border-radius: 5px; border: 1px solid #2d3748;">{agora}</div>
+        <div style="color: #90cdf4; font-weight: bold; font-size: 1.2em; background: #1a1f29; padding: 2px 12px; border-radius: 5px; border: 1px solid #2d3748;">{agora}</div>
     </div>
     """, unsafe_allow_html=True)
 
-# 5. Exibição (12 COLUNAS)
-for nome_setor in setores.keys():
-    st.markdown(f"<div class='setor-header'>{nome_setor}</div>", unsafe_allow_html=True)
-    cols = st.columns(12) # Layout esticado na horizontal
-    maquinas = [m for m in lista_final if m['setor_pai'] == nome_setor]
-    
-    for idx, m in enumerate(maquinas):
-        with cols[idx % 12]:
-            st.markdown(f"""
-                <div class="card {m['classe']}" style="border-top-color: {m['cor']};">
-                    <div class="maquina-id">{m['id']}</div>
-                    <div class="maquina-nome">{m['n']}</div>
-                    <div class="status-texto" style="color: {m['cor']};">{m['status']}</div>
-                    <div class='texto-destaque'>{m['s_nome'] if m['status'] != 'NORMAL' else '✅'}</div>
-                </div>
-            """, unsafe_allow_html=True)
+# 5. Exibição em Grade Contínua (12 colunas)
+cols = st.columns(12)
+for idx, m in enumerate(lista_maquinas_final):
+    with cols[idx % 12]:
+        # Se for a primeira máquina do setor, exibe o nome do setor acima dela
+        label_html = f"<span class='setor-label'>{m['setor']}</span>" if m['primeira_do_setor'] else "<span class='setor-label' style='color:transparent;'>.</span>"
+        
+        st.markdown(f"""
+            {label_html}
+            <div class="card {m['classe']}" style="border-top-color: {m['cor']};">
+                <div class="maquina-id">{m['id']}</div>
+                <div class="maquina-nome">{m['n']}</div>
+                <div class="status-texto" style="color: {m['cor']};">{m['status']}</div>
+                <div class='texto-destaque'>{m['s_nome'] if m['status'] != 'NORMAL' else '✅'}</div>
+            </div>
+        """, unsafe_allow_html=True)
