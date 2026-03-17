@@ -21,14 +21,14 @@ st.markdown("""
     }
     .maquina-id { 
         color: #e5e7eb; 
-        font-size: 0.95em; 
+        font-size: 0.85em; 
         font-weight: bold; 
         text-transform: uppercase; 
         margin-bottom: 2px;
         background-color: #374151;
         border-radius: 3px;
         display: inline-block;
-        padding: 2px 10px;
+        padding: 2px 8px;
     }
     .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
@@ -54,13 +54,15 @@ st.markdown("""
 # 2. Busca de Dados
 def buscar_dados():
     try:
+        # Busca o texto bruto enviado pelo Power Automate ao Firebase
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
         return r.text.upper()
-    except: return ""
+    except: 
+        return ""
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos Atualizada (Inclusão da HT_1313)
+# 3. Lista de Ativos (Sincronizada com nomes do Relatório)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -73,44 +75,49 @@ ativos = [
     {"id": "1306", "n": "HT 1306"}, {"id": "1311", "n": "HT 1311"},
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, 
     {"id": "EMPILHADEIRA 26", "n": "EMPILHADEIRA 26"}, {"id": "HT_1308", "n": "HT 1308"},
-    {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"} # Nova Máquina Incluída
+    {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Exibição
+# 4. Processamento e Exibição
 cols = st.columns(5)
-for i, at in enumerate(ativos):
-    pos = string_bruta.rfind(at['id']) 
-    ctx = string_bruta[pos:pos+150] if pos != -1 else ""
-    
-    # Identificação do Tipo
-    if at['id'] == "26": tipo_servico = "MECÂNICA"
-    elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
-    elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
-    elif "CIVIL" in ctx: tipo_servico = "CIVIL"
-    else: tipo_servico = "MANUTENÇÃO"
 
-    # --- LÓGICA DE CORES REVISADA (CIVIL SEMPRE AMARELO) ---
+for i, at in enumerate(ativos):
+    # Encontra a posição do ID no texto
+    pos = string_bruta.rfind(at['id'])
     
-    # 1. Se for CIVIL, ignora qualquer parada e fica sempre AMARELO
-    if tipo_servico == "CIVIL":
-        cor, lbl = "#f1c40f", "PARCIAL"
-        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-    
-    # 2. Se não for Civil, mas tiver a palavra PARCIAL, fica AMARELO
-    elif "PARCIAL" in ctx:
-        cor, lbl = "#f1c40f", "PARCIAL"
-        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-    
-    # 3. Se não for Civil nem Parcial, mas tiver a palavra PARADA, fica VERMELHO
-    elif "PARADA" in ctx:
-        cor, lbl = "#e74c3c", "PARADA"
-        info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-    
-    # 4. Caso contrário, Verde
+    if pos != -1:
+        # Captura um bloco de texto após o ID (janela de 180 caracteres)
+        ctx = string_bruta[pos:pos+180]
+        
+        # Define o Setor (Procura apenas no início do contexto para não pegar a próxima máquina)
+        if "ELETRICA" in ctx[:100]: tipo_servico = "ELÉTRICA"
+        elif "MECANICA" in ctx[:100]: tipo_servico = "MECÂNICA"
+        elif "CIVIL" in ctx[:100]: tipo_servico = "CIVIL"
+        else: tipo_servico = "MANUTENÇÃO"
+
+        # Lógica de Prioridade de Cores
+        if tipo_servico == "CIVIL":
+            cor, lbl = "#f1c40f", "PARCIAL" # Regra: Civil nunca fica vermelho
+            info = f"<div class='texto-destaque'>{tipo_servico}</div>"
+        
+        elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
+            cor, lbl = "#e74c3c", "PARADA"
+            info = f"<div class='texto-destaque'>{tipo_servico}</div>"
+            
+        elif "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
+            cor, lbl = "#f1c40f", "PARCIAL"
+            info = f"<div class='texto-destaque'>{tipo_servico}</div>"
+            
+        else:
+            # Se achou o nome mas não achou palavras de parada
+            cor, lbl = "#2ecc71", "NORMAL"
+            info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
     else:
+        # Se NÃO achou o nome da máquina no texto (Máquina Livre)
         cor, lbl = "#2ecc71", "NORMAL"
         info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
 
+    # Renderização do Card
     with cols[i % 5]:
         st.markdown(f"""
             <div class="card" style="border-top-color: {cor};">
