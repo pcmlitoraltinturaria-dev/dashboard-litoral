@@ -60,7 +60,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos Atualizada (Inclusão da HT_1303)
+# 3. Lista de Ativos Atualizada (Inclusão da HT_1313)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -73,7 +73,7 @@ ativos = [
     {"id": "1306", "n": "HT 1306"}, {"id": "1311", "n": "HT 1311"},
     {"id": "1314", "n": "HT 1314"}, {"id": "2603", "n": "SECADOR"}, 
     {"id": "EMPILHADEIRA 26", "n": "EMPILHADEIRA 26"}, {"id": "HT_1308", "n": "HT 1308"},
-    {"id": "HT_1303", "n": "HT 1303"} # Nova Máquina Incluída
+    {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"} # Nova Máquina Incluída
 ]
 
 # 4. Exibição
