@@ -55,33 +55,35 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento com Janela de Corte Segura
+# 4. Processamento e Exibição
 cols = st.columns(5)
 for i, at in enumerate(ativos):
+    # rfind garante que pegamos a ocorrência mais recente (evita cabeçalhos)
     pos = string_bruta.rfind(at['id'])
     
     if pos != -1:
-        # Reduzi a janela para 70 caracteres: espaço exato para ver o status da própria máquina
-        # sem alcançar a próxima linha do relatório de O.S.
-        ctx = string_bruta[pos : pos + 70]
+        # Janela de segurança de apenas 60 caracteres (curtíssima)
+        # Isso garante que ele leia o setor e o status da própria linha
+        ctx = string_bruta[pos : pos + 60]
         
-        # Define o setor presente apenas no contexto curto
+        # Identificação de Setor (Priorizando Civil que é Amarelo fixo)
         setor = "MANUTENÇÃO"
         if "CIVIL" in ctx: setor = "CIVIL"
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # Lógica de Decisão (Status PARADA tem prioridade se não for CIVIL)
-        if "PARADA" in ctx and setor != "CIVIL":
-            cor, lbl = "#e74c3c", "PARADA"
-        elif setor == "CIVIL" or "PARCIAL" in ctx:
-            cor, lbl = "#f1c40f", "PARCIAL"
+        # Lógica de Cores
+        if setor == "CIVIL":
+            cor, lbl = "#f1c40f", "PARCIAL" # Civil sempre amarelo
+        elif "PARADA" in ctx:
+            cor, lbl = "#e74c3c", "PARADA"   # Vermelho se houver Parada no contexto curto
+        elif "PARCIAL" in ctx:
+            cor, lbl = "#f1c40f", "PARCIAL"  # Amarelo se for Parcial
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
         info = f"<div class='texto-destaque'>{setor if lbl != 'NORMAL' else '✅ OPERANDO'}</div>"
     else:
-        # Se a máquina não estiver no texto, ela está livre
         cor, lbl, info = "#2ecc71", "NORMAL", "<div class='texto-destaque'>✅ OPERANDO</div>"
 
     with cols[i % 5]:
