@@ -56,28 +56,33 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento
+# 4. Processamento com Lógica de Prioridade Final
 cols = st.columns(5)
 for i, at in enumerate(ativos):
+    # Encontra a posição mais recente do ID para evitar cabeçalhos antigos
     pos = string_bruta.rfind(at['id'])
     
     if pos != -1:
-        # Janela de leitura reduzida para 75 caracteres para não ler a máquina debaixo
-        ctx = string_bruta[pos : pos + 75]
+        # Janela de leitura focada (80 caracteres) para evitar ler a máquina de baixo
+        ctx = string_bruta[pos : pos + 80]
         
-        # Define setor
+        # Identificação de Setor
         setor = "MANUTENÇÃO"
         if "CIVIL" in ctx: setor = "CIVIL"
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # Lógica de Cores - ORDEM DE PRIORIDADE CORRIGIDA
-        # Primeiro verificamos se é PARCIAL (para evitar erro na RAMA)
-        if "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx or setor == "CIVIL":
+        # LÓGICA DE DECISÃO (Ordem de prioridade importa aqui)
+        # 1. Civil é sempre Amarelo/Parcial
+        if setor == "CIVIL":
             cor, lbl = "#f1c40f", "PARCIAL"
-        # Depois verificamos se é PARADA total
-        elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
+        # 2. Se o status final for Parcial (ex: Rama LK) -> Amarelo
+        elif "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
+            cor, lbl = "#f1c40f", "PARCIAL"
+        # 3. Se o status for Parada Total (ex: HT_1313) -> Vermelho
+        elif "MÁQUINA PARADA" in ctx or ("PARADA" in ctx and "PARCIAL" not in ctx):
             cor, lbl = "#e74c3c", "PARADA"
+        # 4. Caso contrário -> Verde
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
