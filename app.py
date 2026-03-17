@@ -2,46 +2,49 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-# 1. Configuração de Layout para Tela Única
+# 1. Configuração de Layout para Máxima Densidade
 st.set_page_config(page_title="Central Litoral", layout="wide")
 
 st.markdown("""
     <style>
-    /* Reset de margens para aproveitar 100% da tela vertical */
     .block-container { 
-        padding-top: 0.5rem !important; 
+        padding-top: 0.3rem !important; 
         padding-bottom: 0rem !important; 
         padding-left: 0.5rem !important; 
         padding-right: 0.5rem !important; 
+        max-width: 100% !important;
     }
     .stApp { background-color: #0b0e14; overflow: hidden; }
     
-    /* Nome do setor grudado na linha de cor */
+    /* NOME DO SETOR: Grudado na linha como se fosse a linha de escrever */
     .setor-label {
         color: #90cdf4; 
         font-size: 0.65rem; 
         font-weight: 800;
         text-transform: uppercase;
-        margin-bottom: -3px;
-        margin-left: 5px;
-        display: block;
-        text-align: left;
+        margin-bottom: -9px; /* Puxa o card para cima do texto */
+        margin-left: 10px;
+        position: relative;
+        z-index: 10; /* Garante que fique acima da borda */
+        background: #0b0e14; /* Cor do fundo para "cortar" a borda se necessário */
+        padding: 0 4px;
+        display: inline-block;
     }
 
-    /* Animação EXCLUSIVA para a borda superior (sem contorno lateral) */
+    /* Animação UNICAMENTE na linha (border-top) */
     @keyframes piscar-apenas-linha {
         0% { border-top-color: #e74c3c; }
-        50% { border-top-color: #374151; }
+        50% { border-top-color: #1a1f29; }
         100% { border-top-color: #e74c3c; }
     }
 
     .card {
         background-color: #1a1f29; 
-        padding: 8px 4px; 
-        border-radius: 3px;
+        padding: 6px 4px; 
+        border-radius: 2px;
         text-align: center; 
-        margin-bottom: 5px; 
-        min-height: 155px; /* Altura reduzida para caber 3 linhas na tela */
+        margin-bottom: 2px; /* Reduz espaço entre linhas de quadros */
+        min-height: 145px; 
         border-top: 7px solid; 
         display: flex; 
         flex-direction: column;
@@ -51,32 +54,31 @@ st.markdown("""
         border-bottom: 1px solid #232a37;
     }
 
-    /* Aplica o pisca apenas na linha vermelha */
     .blink-line-only { 
         animation: piscar-apenas-linha 0.8s infinite; 
     }
 
-    .maquina-id { color: #90cdf4; font-size: 0.8em; font-weight: bold; opacity: 0.7; }
+    .maquina-id { color: #90cdf4; font-size: 0.75em; font-weight: bold; opacity: 0.7; }
     .maquina-nome { 
-        color: #ffffff; font-weight: 800; font-size: 0.95em; 
-        min-height: 40px; line-height: 1.1; 
+        color: #ffffff; font-weight: 800; font-size: 0.9em; 
+        min-height: 38px; line-height: 1.1; 
         display: flex; align-items: center; justify-content: center;
     }
-    .status-texto { font-weight: 900; font-size: 1.15em; text-transform: uppercase; }
+    .status-texto { font-weight: 900; font-size: 1.1em; text-transform: uppercase; }
     .texto-destaque { 
-        color: #a0aec0 !important; font-weight: bold; font-size: 0.75em; 
-        background: #232a37; border-radius: 3px; padding: 2px 0;
+        color: #a0aec0 !important; font-weight: bold; font-size: 0.7em; 
+        background: #232a37; border-radius: 2px; padding: 1px 0;
     }
     
-    /* Placar Compacto */
-    .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .kpi-unit { background: #1a1f29; padding: 4px 15px; border-radius: 6px; border: 1px solid #2d3748; display: flex; gap: 10px; align-items: center; }
+    /* Cabeçalho de KPIs super compacto */
+    .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .kpi-unit { background: #1a1f29; padding: 2px 12px; border-radius: 4px; border: 1px solid #2d3748; display: flex; gap: 8px; align-items: center; }
 
-    [data-testid="column"] { padding: 3px !important; }
+    [data-testid="column"] { padding: 1px !important; } /* Colunas mais próximas lateralmente */
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Dados (Setores e Ativos)
+# 2. Estrutura de Ativos
 setores = {
     "PREPARAÇÃO": ["701", "1501", "1502", "1503", "1504", "1506"],
     "ACABAMENTO": ["804", "803", "1201", "_1202", "1404"],
@@ -96,7 +98,7 @@ nomes_maquinas = {
     "2603": "SECADOR", "EMPILHADEIRA 26": "EMPILHADEIRA 26"
 }
 
-# 3. Integração
+# 3. Lógica de Dados
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -131,20 +133,20 @@ for nome_setor, ids in setores.items():
             "s_nome": s_nome, "primeira": (i == 0)
         })
 
-# 4. Exibição KPIs
+# 4. Top Bar Compacta
 agora = datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
     <div class="kpi-row">
-        <div style="display: flex; gap: 10px;">
-            <div class="kpi-unit"><b style="color:#2ecc71; font-size:1.3em;">{total-paradas-parciais}</b> <span style="color:#a0aec0; font-size:0.7em;">OPERANDO</span></div>
-            <div class="kpi-unit"><b style="color:#f1c40f; font-size:1.3em;">{parciais}</b> <span style="color:#a0aec0; font-size:0.7em;">AVISO</span></div>
-            <div class="kpi-unit"><b style="color:#e74c3c; font-size:1.3em;">{paradas}</b> <span style="color:#a0aec0; font-size:0.7em;">PARADAS</span></div>
+        <div style="display: flex; gap: 8px;">
+            <div class="kpi-unit"><b style="color:#2ecc71;">{total-paradas-parciais}</b> <span style="color:#a0aec0; font-size:0.65em;">OK</span></div>
+            <div class="kpi-unit"><b style="color:#f1c40f;">{parciais}</b> <span style="color:#a0aec0; font-size:0.65em;">AVISO</span></div>
+            <div class="kpi-unit"><b style="color:#e74c3c;">{paradas}</b> <span style="color:#a0aec0; font-size:0.65em;">STOP</span></div>
         </div>
-        <div style="color: #90cdf4; font-weight: 800; font-size: 1.5em; letter-spacing: 1px;">{agora}</div>
+        <div style="color: #90cdf4; font-weight: 800; font-size: 1.2em;">{agora}</div>
     </div>
     """, unsafe_allow_html=True)
 
-# 5. Grid de 8 Colunas (3 Linhas para 24 Ativos)
+# 5. Grid (8 Colunas x 3 Linhas)
 cols = st.columns(8)
 for idx, m in enumerate(lista_final):
     with cols[idx % 8]:
