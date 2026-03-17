@@ -1,26 +1,47 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo
+# 1. Configuração de Layout e Estilo Reduzido
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; }
+    /* Ajuste do Card para tamanho reduzido */
     .card {
-        background-color: #1f2937; padding: 10px; border-radius: 5px;
-        text-align: center; margin-bottom: 8px; min-height: 145px; 
-        border-top: 6px solid; display: flex; flex-direction: column;
-        justify-content: flex-start;
+        background-color: #1f2937; 
+        padding: 5px; /* Reduzido de 10px */
+        border-radius: 4px;
+        text-align: center; 
+        margin-bottom: 5px; 
+        min-height: 100px; /* Reduzido de 145px */
+        border-top: 4px solid; /* Reduzido de 6px */
+        display: flex; 
+        flex-direction: column;
+        justify-content: center;
     }
     .maquina-id { 
-        color: #e5e7eb; font-size: 0.85em; font-weight: bold; 
-        background-color: #374151; border-radius: 3px;
-        display: inline-block; padding: 2px 8px; margin-bottom: 2px;
+        color: #e5e7eb; font-size: 0.75em; font-weight: bold; 
+        background-color: #374151; border-radius: 2px;
+        display: inline-block; padding: 1px 6px; margin-bottom: 2px;
     }
-    .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; }
-    .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
-    .texto-destaque { color: #FFFFFF !important; font-weight: bold; font-size: 0.9em; margin-top: 6px; }
+    .maquina-nome { 
+        color: #9ca3af; font-weight: bold; font-size: 0.75em; 
+        margin-bottom: 2px; line-height: 1;
+    }
+    .status-texto { 
+        font-weight: bold; font-size: 0.9em; /* Reduzido de 1.1em */
+        text-transform: uppercase; margin-bottom: 1px; 
+    }
+    .texto-destaque { 
+        color: #FFFFFF !important; font-weight: bold; font-size: 0.8em; 
+        margin-top: 2px; 
+    }
+    /* Ajuste de espaçamento entre colunas do Streamlit */
+    [data-testid="column"] {
+        padding-left: 3px !important;
+        padding-right: 3px !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -50,36 +71,26 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento
-cols = st.columns(5)
+# 4. Processamento e Exibição em 6 Colunas (para aproveitar o espaço reduzido)
+cols = st.columns(6) # Aumentado de 5 para 6 colunas
 for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
     
     if pos != -1:
-        # Janela de contexto de 80 caracteres
         ctx = string_bruta[pos : pos + 80]
         
-        # Define setor
         setor = "MANUTENÇÃO"
         if "CIVIL" in ctx: setor = "CIVIL"
         elif "ELETRICA" in ctx: setor = "ELÉTRICA"
         elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # --- NOVA LÓGICA DE CORES ---
-        
-        # 1. Se o status final for NORMAL, fica VERDE (Prioridade Máxima)
+        # Lógica de Cores com prioridade para NORMAL (Verde)
         if "NORMAL" in ctx:
             cor, lbl = "#2ecc71", "NORMAL"
-        
-        # 2. Se for CIVIL ou contiver PARCIAL, fica AMARELO
         elif "CIVIL" in ctx or "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
             cor, lbl = "#f1c40f", "PARCIAL"
-            
-        # 3. Se for PARADA, fica VERMELHO
         elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
             cor, lbl = "#e74c3c", "PARADA"
-            
-        # 4. Padrão caso não encontre nada específico
         else:
             cor, lbl = "#2ecc71", "NORMAL"
         
@@ -87,7 +98,7 @@ for i, at in enumerate(ativos):
     else:
         cor, lbl, info = "#2ecc71", "NORMAL", "<div class='texto-destaque'>✅ OPERANDO</div>"
 
-    with cols[i % 5]:
+    with cols[i % 6]:
         st.markdown(f"""
             <div class="card" style="border-top-color: {cor};">
                 <div class="maquina-id">ID: {at['id']}</div>
