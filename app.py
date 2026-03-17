@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
 
-# 1. Configuração de Layout e Estilo
+# 1. Configuração de Layout
 st.set_page_config(page_title="Monitor Litoral", layout="wide")
 
 st.markdown("""
@@ -20,34 +20,13 @@ st.markdown("""
         justify-content: flex-start;
     }
     .maquina-id { 
-        color: #e5e7eb; 
-        font-size: 0.85em; 
-        font-weight: bold; 
-        text-transform: uppercase; 
-        margin-bottom: 2px;
-        background-color: #374151;
-        border-radius: 3px;
-        display: inline-block;
-        padding: 2px 8px;
+        color: #e5e7eb; font-size: 0.85em; font-weight: bold; 
+        background-color: #374151; border-radius: 3px;
+        display: inline-block; padding: 2px 8px; margin-bottom: 2px;
     }
-    .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; text-transform: uppercase; }
+    .maquina-nome { color: #9ca3af; font-weight: bold; font-size: 0.85em; margin-bottom: 5px; }
     .status-texto { font-weight: bold; font-size: 1.1em; text-transform: uppercase; margin-bottom: 2px; }
-    .texto-destaque { 
-        color: #FFFFFF !important; 
-        font-weight: bold; 
-        font-size: 0.9em; 
-        text-transform: uppercase; 
-        line-height: 1.2;
-        margin-top: 6px;
-        display: block;
-    }
-    .status-normal-container {
-        margin-top: 5px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-    }
+    .texto-destaque { color: #FFFFFF !important; font-weight: bold; font-size: 0.9em; margin-top: 6px; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -56,8 +35,7 @@ def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
         return r.text.upper()
-    except: 
-        return ""
+    except: return ""
 
 string_bruta = buscar_dados()
 
@@ -77,56 +55,38 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento e Exibição
+# 4. Processamento
 cols = st.columns(5)
-
 for i, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
     
-    # Se achou a máquina no texto
     if pos != -1:
-        # Janela de apenas 100 caracteres para evitar ler a máquina vizinha
-        ctx = string_bruta[pos : pos + 100]
+        # Janela de leitura curtíssima (80 caracteres) para não "invadir" a máquina de baixo
+        ctx = string_bruta[pos : pos + 80]
         
-        # Identificação de Setor
-        if "CIVIL" in ctx: tipo_servico = "CIVIL"
-        elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
-        elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
-        else: tipo_servico = "MANUTENÇÃO"
+        # Define o setor presente APENAS no contexto da máquina
+        setor = "MANUTENÇÃO"
+        if "CIVIL" in ctx: setor = "CIVIL"
+        elif "ELETRICA" in ctx: setor = "ELÉTRICA"
+        elif "MECANICA" in ctx: setor = "MECÂNICA"
 
-        # --- NOVA LÓGICA DE PRIORIDADE ---
-        
-        # 1. Se contém PARADA e NÃO é Civil -> VERMELHO (HT_1313 cairá aqui)
-        if "PARADA" in ctx and tipo_servico != "CIVIL":
+        # Lógica de Decisão (Prioridade para Status Real)
+        if "PARADA" in ctx and setor != "CIVIL":
             cor, lbl = "#e74c3c", "PARADA"
-            info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-        
-        # 2. Se for setor CIVIL -> AMARELO (HT_1324 cairá aqui)
-        elif tipo_servico == "CIVIL":
+        elif setor == "CIVIL" or "PARCIAL" in ctx:
             cor, lbl = "#f1c40f", "PARCIAL"
-            info = f"<div class='texto-destaque'>CIVIL</div>"
-            
-        # 3. Se contém PARCIAL -> AMARELO (Rama LK cairá aqui)
-        elif "PARCIAL" in ctx:
-            cor, lbl = "#f1c40f", "PARCIAL"
-            info = f"<div class='texto-destaque'>{tipo_servico}</div>"
-            
-        # 4. Caso contrário -> VERDE
         else:
             cor, lbl = "#2ecc71", "NORMAL"
-            info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
+        
+        info = f"<div class='texto-destaque'>{setor if lbl != 'NORMAL' else '✅ OPERANDO'}</div>"
     else:
-        # Máquina não está no relatório
-        cor, lbl = "#2ecc71", "NORMAL"
-        info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
+        cor, lbl, info = "#2ecc71", "NORMAL", "<div class='texto-destaque'>✅ OPERANDO</div>"
 
     with cols[i % 5]:
         st.markdown(f"""
             <div class="card" style="border-top-color: {cor};">
-                <div>
-                    <div class="maquina-id">ID: {at['id']}</div>
-                    <div class="maquina-nome">{at['n']}</div>
-                </div>
+                <div class="maquina-id">ID: {at['id']}</div>
+                <div class="maquina-nome">{at['n']}</div>
                 <div class="status-texto" style="color: {cor};">{lbl}</div>
                 {info}
             </div>
