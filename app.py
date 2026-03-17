@@ -54,7 +54,6 @@ st.markdown("""
 # 2. Busca de Dados
 def buscar_dados():
     try:
-        # Busca o texto bruto enviado pelo Power Automate ao Firebase
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
         return r.text.upper()
     except: 
@@ -62,7 +61,7 @@ def buscar_dados():
 
 string_bruta = buscar_dados()
 
-# 3. Lista de Ativos (Sincronizada com nomes do Relatório)
+# 3. Lista de Ativos (Ajustada para os termos exatos do relatório)
 ativos = [
     {"id": "701", "n": "ABRIDOR BIANCO"}, {"id": "1501", "n": "ABRIDOR BRASTEC 1"},
     {"id": "1502", "n": "ABRIDOR BRASTEC 2"}, {"id": "1503", "n": "ABRIDOR BRASTEC 3"},
@@ -78,46 +77,48 @@ ativos = [
     {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}
 ]
 
-# 4. Processamento e Exibição
+# 4. Processamento de Lógica e Exibição
 cols = st.columns(5)
 
 for i, at in enumerate(ativos):
-    # Encontra a posição do ID no texto
+    # Procura a posição da máquina no texto
     pos = string_bruta.rfind(at['id'])
     
+    # Se achou a máquina no relatório
     if pos != -1:
-        # Captura um bloco de texto após o ID (janela de 180 caracteres)
-        ctx = string_bruta[pos:pos+180]
+        # Pega apenas os 120 caracteres seguintes (impede ler a máquina de baixo)
+        ctx = string_bruta[pos : pos + 120]
         
-        # Define o Setor (Procura apenas no início do contexto para não pegar a próxima máquina)
-        if "ELETRICA" in ctx[:100]: tipo_servico = "ELÉTRICA"
-        elif "MECANICA" in ctx[:100]: tipo_servico = "MECÂNICA"
-        elif "CIVIL" in ctx[:100]: tipo_servico = "CIVIL"
+        # Identifica o setor dentro desse pequeno bloco
+        if "CIVIL" in ctx: tipo_servico = "CIVIL"
+        elif "ELETRICA" in ctx: tipo_servico = "ELÉTRICA"
+        elif "MECANICA" in ctx: tipo_servico = "MECÂNICA"
         else: tipo_servico = "MANUTENÇÃO"
 
-        # Lógica de Prioridade de Cores
+        # Lógica de Cores por Prioridade
         if tipo_servico == "CIVIL":
-            cor, lbl = "#f1c40f", "PARCIAL" # Regra: Civil nunca fica vermelho
+            cor, lbl = "#f1c40f", "PARCIAL"  # Regra: Civil é sempre amarelo
             info = f"<div class='texto-destaque'>{tipo_servico}</div>"
         
-        elif "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
+        elif "PARADA" in ctx:
             cor, lbl = "#e74c3c", "PARADA"
             info = f"<div class='texto-destaque'>{tipo_servico}</div>"
             
-        elif "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
+        elif "PARCIAL" in ctx:
             cor, lbl = "#f1c40f", "PARCIAL"
             info = f"<div class='texto-destaque'>{tipo_servico}</div>"
             
         else:
-            # Se achou o nome mas não achou palavras de parada
+            # Caso o nome esteja no relatório mas o status seja "Normal"
             cor, lbl = "#2ecc71", "NORMAL"
             info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
+    
     else:
-        # Se NÃO achou o nome da máquina no texto (Máquina Livre)
+        # Máquina não encontrada no relatório (Está Livre)
         cor, lbl = "#2ecc71", "NORMAL"
         info = "<div class='status-normal-container'><span style='color:#2ecc71'>✅</span><span class='texto-destaque'>OPERANDO</span></div>"
 
-    # Renderização do Card
+    # Renderização
     with cols[i % 5]:
         st.markdown(f"""
             <div class="card" style="border-top-color: {cor};">
