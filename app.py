@@ -2,16 +2,26 @@ import streamlit as st
 import requests
 from datetime import datetime
 import re
-from streamlit_autorefresh import st_autorefresh # Precisa instalar: pip install streamlit-autorefresh
 
-# 1. Configuração de UI e Auto-Refresh (30 segundos)
+# 1. Configuração de UI
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
-st_autorefresh(interval=30 * 1000, key="datarefresh")
+
+# Script nativo para atualizar a página a cada 30 segundos
+st.components.v1.html(
+    """
+    <script>
+    window.parent.postMessage({type: 'streamlit:set_page_config', config: {refresh: 30}}, '*');
+    setTimeout(function(){ window.location.reload(); }, 30000);
+    </script>
+    """,
+    height=0,
+)
 
 agora = datetime.now().strftime("%H:%M:%S")
 
 st.markdown(f"""
     <style>
+    /* Contador de tempo no topo vazio */
     .timer-container {{
         position: absolute;
         top: -35px;
@@ -35,12 +45,13 @@ st.markdown(f"""
     .stApp {{ background-color: #0b0e14; }}
     header {{ visibility: hidden; }}
 
-    /* EFEITO FAROL (Linha branca deslizando - 3s) */
+    /* EFEITO FAROL (Linha branca deslizando) */
     @keyframes efeito-farol {{
         0% {{ background-position: -200% 0; }}
         100% {{ background-position: 200% 0; }}
     }}
 
+    /* PISCAR (Para Máquina Parada) */
     @keyframes piscar-vermelho {{ 
         0% {{ border-top-color: #ff0000; }} 
         50% {{ border-top-color: #440000; }} 
@@ -123,9 +134,7 @@ string_bruta = buscar_dados()
 processados = []
 
 for at in ativos:
-    # Busca agora funciona para o Químico também
     pos = string_bruta.rfind(at['id'])
-    
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "", "✅", "EM OPERAÇÃO"
     
     if pos != -1:
