@@ -6,7 +6,6 @@ import re
 # 1. Configuração de UI
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
-# Refresh Automático Nativo (30 segundos)
 st.components.v1.html(
     "<script>setTimeout(function(){window.location.reload();}, 30000);</script>",
     height=0,
@@ -14,7 +13,6 @@ st.components.v1.html(
 
 agora = datetime.now().strftime("%H:%M:%S")
 
-# CSS com bordas equalizadas e animações
 st.markdown(f"""
     <style>
     .timer-container {{
@@ -36,12 +34,11 @@ st.markdown(f"""
         justify-content: space-between; align-items: center; 
         border: 1px solid #232a37;
         box-sizing: border-box;
-        border-top: 7px solid; /* Espessura idêntica para todos */
+        border-top: 7px solid;
     }}
 
     .border-normal {{ border-top-color: #2ecc71 !important; }}
     .border-parada {{ border-top-color: #ff0000 !important; animation: piscar-vermelho 0.8s infinite; }}
-    
     .farol-aviso {{
         border-top-color: transparent !important;
         background-image: linear-gradient(#1a1f29, #1a1f29), linear-gradient(90deg, #ff8c00 30%, #ffffff 50%, #ff8c00 70%);
@@ -55,18 +52,17 @@ st.markdown(f"""
     .id-numeros {{ font-size: 3rem; font-weight: 900; }}
     .status-area {{ font-weight: 900; font-size: 0.9rem; text-transform: uppercase; margin: 4px 0; }}
     .tag-servico {{ color: #ffffff !important; font-weight: bold; font-size: 0.75rem; background: #334155; border-radius: 3px; padding: 3px 0; width: 90%; }}
-    [data-testid="column"] {{ padding: 3px !important; }}
     </style>
     <div class="timer-container">⏱️ ATUALIZADO EM: {agora}</div>
     """, unsafe_allow_html=True)
 
-# 2. Lógica de Ativos
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
         return r.text.upper() if r.text else ""
     except: return ""
 
+# Lista oficial de ativos
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -78,44 +74,41 @@ ativos = [
     {"id": "1002", "n": "FELP 2"}, {"id": "2603", "n": "SECADOR"}, {"id": "HT_1316", "n": "HT 1316"}
 ]
 
-def formatar_id_visual(id_bruto):
-    limpo = id_bruto.replace("_", "").replace("QUIMICO", "")
-    match = re.match(r"([a-zA-Z]+)?(\d+)", limpo)
-    if match:
-        letras = f'<span class="id-letras">{match.group(1)}</span>' if match.group(1) else ""
-        return f"{letras}<span class='id-numeros'>{match.group(2)}</span>"
-    return f"<span class='id-numeros'>{limpo}</span>"
-
 string_bruta = buscar_dados()
 processados = []
 
 for at in ativos:
+    # Busca a posição do ID no texto
     pos = string_bruta.rfind(at['id'])
+    
+    # PADRÃO: Se não achar no texto ou não disser parada/parcial, é VERDE
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM OPERAÇÃO"
     
     if pos != -1:
-        ctx = string_bruta[pos : pos + 350]
-        # REGRA: "Máquina Parada" na prioridade manda no visual, mesmo se estiver em execução
+        # Pega o contexto daquela máquina (as próximas informações após o ID)
+        ctx = string_bruta[pos : pos + 300]
+        
+        # VERIFICAÇÃO RIGOROSA CONFORME SOLICITADO
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-parada", "🛑", "CORRETIVA"
         elif "MÁQ.PAR.PARCIAL" in ctx:
             status, cor, classe, icon, servico = "AVISO", "#ff8c00", "farol-aviso", "⚠️", "PARCIAL"
-        elif "EXECUÇÃO" in ctx:
-            status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM EXECUÇÃO"
+        # Qualquer outro termo (Execução, Aberta, Cipa, Normal) cai no padrão VERDE
 
     processados.append({
-        "id_html": formatar_id_visual(at['id']), "n": at['n'], 
-        "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
+        "id_html": at['id'].replace("_", "").replace("QUIMICO", ""), 
+        "n": at['n'], "status": status, "cor": cor, "classe": classe, 
+        "icon": icon, "servico": servico
     })
 
-# 3. Renderização do Grid
+# Renderização
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
         st.markdown(f"""
             <div class="card {m['classe']}">
                 <div class="nome-topo">{m['n']}</div>
-                <div class="id-container">{m['id_html']}</div>
+                <div class="id-container"><span class='id-numeros'>{m['id_html']}</span></div>
                 <div class="status-area" style="color: {m['cor']};">{m['icon']} {m['status']}</div>
                 <div class="tag-servico">{m['servico']}</div>
             </div>
