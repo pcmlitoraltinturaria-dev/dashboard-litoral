@@ -14,7 +14,7 @@ st.components.v1.html(
 
 agora = datetime.now().strftime("%H:%M:%S")
 
-# CSS Unificado para espessura de bordas
+# CSS com bordas equalizadas e animações
 st.markdown(f"""
     <style>
     .timer-container {{
@@ -36,10 +36,9 @@ st.markdown(f"""
         justify-content: space-between; align-items: center; 
         border: 1px solid #232a37;
         box-sizing: border-box;
-        border-top: 7px solid; /* Espessura padrão para todos */
+        border-top: 7px solid; /* Espessura idêntica para todos */
     }}
 
-    /* Estilização das bordas por classe */
     .border-normal {{ border-top-color: #2ecc71 !important; }}
     .border-parada {{ border-top-color: #ff0000 !important; animation: piscar-vermelho 0.8s infinite; }}
     
@@ -61,7 +60,7 @@ st.markdown(f"""
     <div class="timer-container">⏱️ ATUALIZADO EM: {agora}</div>
     """, unsafe_allow_html=True)
 
-# 2. Lógica de Ativos e Busca
+# 2. Lógica de Ativos
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -96,13 +95,11 @@ for at in ativos:
     
     if pos != -1:
         ctx = string_bruta[pos : pos + 350]
-        # Prioridade 1: Parada Total
-        if "MÁQUINA PARADA" in ctx and "NORMAL" not in ctx and "EXECUÇÃO" not in ctx:
+        # REGRA: "Máquina Parada" na prioridade manda no visual, mesmo se estiver em execução
+        if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-parada", "🛑", "CORRETIVA"
-        # Prioridade 2: Parada Parcial (Aviso)
         elif "MÁQ.PAR.PARCIAL" in ctx:
             status, cor, classe, icon, servico = "AVISO", "#ff8c00", "farol-aviso", "⚠️", "PARCIAL"
-        # Prioridade 3: Em execução (Normal Verde)
         elif "EXECUÇÃO" in ctx:
             status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM EXECUÇÃO"
 
@@ -111,7 +108,7 @@ for at in ativos:
         "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
     })
 
-# 3. Renderização
+# 3. Renderização do Grid
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
