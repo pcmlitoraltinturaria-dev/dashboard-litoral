@@ -2,107 +2,38 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-# 1. Configuração da Página
+# Configuração e Refresh
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
+st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 30000);</script>", height=0)
 
-# Auto-refresh de 30 segundoS
-st.components.v1.html(
-    "<script>setTimeout(function(){window.location.reload();}, 30000);</script>",
-    height=0,
-)
-
-agora = datetime.now().strftime("%H:%M:%S")
-
-# 2. CSS - Ajuste de Letras, Espaçamento Superior e Cores
+# CSS Ajustado (Espaçamento superior e fontes)
 st.markdown(f"""
     <style>
-    /* Empurra o conteúdo para baixo (Ajuste solicitado) */
-    .block-container {{ 
-        padding-top: 5.5rem !important; 
-        max-width: 98% !important; 
-        margin: 0 auto; 
-    }}
-    
+    .block-container {{ padding-top: 5.5rem !important; max-width: 98% !important; margin: 0 auto; }}
     .stApp {{ background-color: #0b0e14; }}
     header {{ visibility: hidden; }}
-
-    .timer-container {{
-        position: absolute; top: 10px; right: 20px; color: #718096;
-        font-family: monospace; font-size: 0.8rem; background: rgba(26, 31, 41, 0.9);
-        padding: 4px 12px; border-radius: 20px; border: 1px solid #2d3748;
-    }}
-
     .card {{
-        background-color: #1a1f29; 
-        padding: 12px 5px; 
-        border-radius: 5px;
-        text-align: center; 
-        margin-bottom: 8px; 
-        min-height: 155px; 
-        display: flex; 
-        flex-direction: column;
-        justify-content: space-between; 
-        align-items: center; 
-        border: 1px solid #232a37;
-        box-sizing: border-box;
-        border-top: 7px solid;
+        background-color: #1a1f29; padding: 12px 5px; border-radius: 5px;
+        text-align: center; margin-bottom: 8px; min-height: 155px; 
+        display: flex; flex-direction: column; justify-content: space-between; 
+        align-items: center; border: 1px solid #232a37; border-top: 7px solid;
     }}
-
-    /* Ajuste do tamanho das fontes (Ajuste solicitado para não encavalar) */
-    .nome-topo {{ 
-        color: #a0aec0; 
-        font-size: 0.65rem; 
-        font-weight: 700; 
-        text-transform: uppercase;
-        margin-bottom: 4px;
-        white-space: nowrap;
-    }}
-    
-    .id-numeros {{ 
-        font-size: 2.3rem; 
-        font-weight: 900;
-        color: #ffffff;
-        line-height: 1;
-        letter-spacing: -1px;
-    }}
-
-    .status-area {{ 
-        font-weight: 800; 
-        font-size: 0.85rem; 
-        text-transform: uppercase;
-        margin: 6px 0;
-    }}
-
-    .tag-servico {{ 
-        color: #ffffff !important; 
-        font-weight: bold; 
-        font-size: 0.7rem; 
-        background: #334155; 
-        border-radius: 3px; 
-        padding: 3px 0; 
-        width: 92%; 
-        text-transform: uppercase;
-    }}
-
-    /* Cores das Bordas */
-    .border-normal {{ border-top-color: #2ecc71 !important; }} /* VERDE */
-    .border-parada {{ border-top-color: #ff0000 !important; }} /* VERMELHO */
-
-    [data-testid="column"] {{ padding: 3px !important; }}
+    .nome-topo {{ color: #a0aec0; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; }}
+    .id-numeros {{ font-size: 2.3rem; font-weight: 900; color: #ffffff; line-height: 1; letter-spacing: -1px; }}
+    .status-area {{ font-weight: 800; font-size: 0.85rem; text-transform: uppercase; margin: 6px 0; }}
+    .tag-servico {{ color: #ffffff; font-weight: bold; font-size: 0.7rem; background: #334155; border-radius: 3px; padding: 3px 0; width: 92%; }}
+    .border-normal {{ border-top-color: #2ecc71 !important; }}
+    .border-parada {{ border-top-color: #ff0000 !important; }}
     </style>
-    <div class="timer-container">⏱️ ATUALIZADO EM: {agora}</div>
     """, unsafe_allow_html=True)
 
-# 3. Função de Busca de Dados
+# Busca de dados
 def buscar_dados():
     try:
-        # Puxa o texto bruto do seu Firebase
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
         return r.text.upper() if r.text else ""
-    except:
-        return ""
+    except: return ""
 
-# Lista Oficial de Ativos (conforme imagem)
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -117,32 +48,26 @@ ativos = [
 string_bruta = buscar_dados()
 cols = st.columns(8)
 
-# 4. Lógica de Processamento (Regra: Verde por padrão)
 for idx, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
     
-    # PADRÃO INICIAL: SEMPRE VERDE (Ajuste para Químico e LK ficarem verdes)
+    # REGRA CRUCIAL: Se não tiver a frase exata "MÁQUINA PARADA", fica VERDE.
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM OPERAÇÃO"
     
     if pos != -1:
-        # Analisa o contexto da máquina no relatório (texto enviado)
         ctx = string_bruta[pos : pos + 400]
-        
-        # SÓ MUDA PARA VERMELHO SE O TEXTO DISSER EXATAMENTE "MÁQUINA PARADA"
-        # Isso corrige o Químico (Normal) e a LK (Parcial) para ficarem Verdes.
+        # Aqui está a trava: SÓ fica vermelho se encontrar "MÁQUINA PARADA"
+        # Ignora "CORRETIVA", "CONSERTO", "MÁQ.PAR.PARCIAL"
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-parada", "🛑", "CORRETIVA"
 
-    # Limpeza do ID para exibição
     id_exibicao = at['id'].replace("_", "").replace("QUIMICO", "")
 
     with cols[idx % 8]:
         st.markdown(f"""
             <div class="card {classe}">
                 <div class="nome-topo">{at['n']}</div>
-                <div class="id-container">
-                    <span class="id-numeros">{id_exibicao}</span>
-                </div>
+                <div class="id-numeros">{id_exibicao}</div>
                 <div class="status-area" style="color: {cor};">{icon} {status}</div>
                 <div class="tag-servico">{servico}</div>
             </div>
