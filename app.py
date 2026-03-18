@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 import re
 
-# 1. Configuração de Layout e Animações
+# 1. Configuração de Layout e Animações Suavizadas
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
 st.markdown("""
@@ -11,15 +11,15 @@ st.markdown("""
     .block-container { padding: 0.5rem !important; max-width: 100% !important; }
     .stApp { background-color: #0b0e14; overflow: hidden; }
     
-    /* STOP: Pisca Vermelho Intenso */
+    /* STOP: Mantém o pisca de 0.8s para urgência */
     @keyframes piscar-topo { 
         0% { border-top-color: #e74c3c; } 
         50% { border-top-color: #1a1f29; } 
         100% { border-top-color: #e74c3c; } 
     }
 
-    /* AVISO: Efeito Farol Branco sobre Laranja (Amenizado) */
-    @keyframes efeito-farol-branco {
+    /* AVISO: Farol Branco mais LENTO (3.0s) para não cansar a vista */
+    @keyframes efeito-farol-lento {
         0% { background-position: -200% 0; }
         100% { background-position: 200% 0; }
     }
@@ -42,22 +42,21 @@ st.markdown("""
 
     .blink-top { animation: piscar-topo 0.8s infinite; }
 
-    /* Nova Classe Farol Branco */
     .farol-branco { 
         border-top: 8px solid transparent !important;
-        /* Fundo Laranja (#ff8c00) com "feixe" Branco (#ffffff) */
         background-image: linear-gradient(#1a1f29, #1a1f29), 
                           linear-gradient(90deg, #ff8c00 35%, #ffffff 50%, #ff8c00 65%);
         background-origin: border-box;
         background-clip: padding-box, border-box;
         background-size: 200% 100%;
-        animation: efeito-farol-branco 1.8s linear infinite; /* Velocidade um pouco mais lenta para ser suave */
+        /* Aumentado para 3 segundos para um movimento bem suave */
+        animation: efeito-farol-lento 3s linear infinite; 
     }
 
-    /* Tipografia conforme solicitado: Números gigantes, letras pequenas */
+    /* Tipografia: Foco total no Número */
     .nome-topo { color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
     .id-container { color: #ffffff; line-height: 1; margin: 2px 0; }
-    .id-letras { font-size: 1.1rem; font-weight: 700; vertical-align: middle; opacity: 0.6; }
+    .id-letras { font-size: 1.1rem; font-weight: 700; vertical-align: middle; opacity: 0.5; }
     .id-numeros { font-size: 2.8rem; font-weight: 900; vertical-align: middle; }
     
     .status-area { font-weight: 900; font-size: 1rem; text-transform: uppercase; margin-top: 5px; }
@@ -73,7 +72,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Ativos e Lógica de Busca
+# 2. Ativos e Lógica (Inalterados)
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -127,7 +126,7 @@ for at in ativos:
         "status": status, "cor": cor, "classe": classe, "icon": icon, "tag": tag
     })
 
-# 3. Renderização
+# 3. Cabeçalho e Grid
 st.markdown(f"""
     <div class="kpi-row">
         <div style="display: flex; gap: 12px;">
