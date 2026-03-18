@@ -2,11 +2,11 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-# 1. Configuração e Refresh
+# 1. Configuração de Página e Refresh
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 30000);</script>", height=0)
 
-# 2. CSS (Ajuste de letras e posição)
+# 2. CSS - Ajustes visuais (Espaço no topo e fontes)
 st.markdown("""
     <style>
     .block-container { padding-top: 5.5rem !important; max-width: 98% !important; margin: 0 auto; }
@@ -27,13 +27,15 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Busca de Dados
+# 3. Busca de Dados do Firebase
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
-        return r.text.upper() if r.text else ""
+        # Removemos espaços extras e forçamos maiúsculas para a busca ser exata
+        return " ".join(r.text.upper().split()) if r.text else ""
     except: return ""
 
+# Lista de Ativos
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -46,27 +48,19 @@ ativos = [
 ]
 
 string_bruta = buscar_dados()
-# Quebra o texto por linhas para não misturar informações de máquinas diferentes
-linhas_texto = string_bruta.split("\\N") 
-
 cols = st.columns(8)
 
 for idx, at in enumerate(ativos):
-    # PADRÃO É SEMPRE VERDE
+    # REGRA DE OURO: TUDO COMEÇA VERDE
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM OPERAÇÃO"
     
-    # Busca a linha específica que contém o ID da máquina
-    linha_da_maquina = ""
-    for linha in linhas_texto:
-        if at['id'] in linha:
-            linha_da_maquina = linha
-            break
-    
-    # SE encontrar a linha, verifica SE nela está escrito MÁQUINA PARADA
-    if linha_da_maquina:
-        if "MÁQUINA PARADA" in linha_da_maquina:
+    # BUSCA CIRÚRGICA:
+    # Só fica vermelho se o ID da máquina e a frase MÁQUINA PARADA estiverem próximos (até 150 caracteres)
+    pos_maquina = string_bruta.find(at['id'])
+    if pos_maquina != -1:
+        trecho_maquina = string_bruta[pos_maquina : pos_maquina + 200]
+        if "MÁQUINA PARADA" in trecho_maquina:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-parada", "🛑", "CORRETIVA"
-        # Note que se na linha estiver "NORMAL" ou "PARCIAL", ele ignora e mantém VERDE
 
     id_exibicao = at['id'].replace("_", "").replace("QUIMICO", "")
 
