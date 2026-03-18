@@ -3,22 +3,22 @@ import requests
 from datetime import datetime
 import re
 
-# 1. Configurações de UI - Limpo e Focado
+# 1. Configuração de UI - Máximo Aproveitamento de Espaço
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
 st.markdown("""
     <style>
-    .block-container { padding: 0.5rem !important; max-width: 100% !important; }
+    /* Remove todas as margens e paddings do Streamlit */
+    .block-container { padding: 0rem !important; max-width: 100% !important; margin-top: -50px; }
     .stApp { background-color: #0b0e14; overflow: hidden; }
+    header {visibility: hidden;} /* Esconde a barra superior do Streamlit */
     
-    /* STOP: Pisca Robusto (10px) */
     @keyframes piscar-robusto { 
         0% { border-top-color: #ff0000; } 
         50% { border-top-color: #660000; } 
         100% { border-top-color: #ff0000; } 
     }
 
-    /* AVISO: Farol Branco Lento (3s) */
     @keyframes efeito-farol-lento { 
         0% { background-position: -200% 0; } 
         100% { background-position: 200% 0; } 
@@ -26,11 +26,11 @@ st.markdown("""
 
     .card {
         background-color: #1a1f29; 
-        padding: 15px 5px; 
+        padding: 12px 5px; 
         border-radius: 4px;
         text-align: center; 
-        margin-bottom: 10px; 
-        min-height: 170px; 
+        margin-bottom: 6px; 
+        min-height: 165px; 
         border-top: 10px solid; 
         display: flex; 
         flex-direction: column;
@@ -53,26 +53,23 @@ st.markdown("""
         animation: efeito-farol-lento 3s linear infinite; 
     }
 
-    /* Tipografia: Foco no ID */
-    .nome-topo { color: #a0aec0; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
-    .id-container { color: #ffffff; line-height: 1; margin: 5px 0; }
-    .id-letras { font-size: 1.2rem; font-weight: 700; opacity: 0.5; margin-right: 3px; }
+    .nome-topo { color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+    .id-container { color: #ffffff; line-height: 1; margin: 2px 0; }
+    .id-letras { font-size: 1.1rem; font-weight: 700; opacity: 0.5; }
     .id-numeros { font-size: 3.2rem; font-weight: 900; }
     
-    .status-area { font-weight: 900; font-size: 1.1rem; text-transform: uppercase; }
+    .status-area { font-weight: 900; font-size: 1rem; text-transform: uppercase; }
     .tag-servico { 
-        color: #ffffff !important; font-weight: bold; font-size: 0.85rem; 
-        background: #334155; border-radius: 3px; padding: 5px 0;
+        color: #ffffff !important; font-weight: bold; font-size: 0.8rem; 
+        background: #334155; border-radius: 3px; padding: 4px 0;
     }
-    
-    .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 10px; }
-    .kpi-unit { background: #1a1f29; padding: 10px 25px; border-radius: 6px; border: 1px solid #2d3748; display: flex; gap: 15px; }
 
-    [data-testid="column"] { padding: 3px !important; }
+    /* Ajuste fino das colunas */
+    [data-testid="column"] { padding: 2px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Lista de Ativos
+# 2. Ativos
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -99,7 +96,6 @@ def buscar_dados():
     except: return ""
 
 string_bruta = buscar_dados()
-resumo = {"OK": 0, "AVISO": 0, "STOP": 0}
 processados = []
 
 for at in ativos:
@@ -118,30 +114,15 @@ for at in ativos:
 
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "blink-top", "🛑", tipo_base
-            resumo["STOP"] += 1
         elif any(x in ctx for x in ["MÁQ.PAR.PARCIAL", "PARCIAL"]):
             status, cor, icon, classe, servico = "AVISO", "#ff8c00", "⚠️", "farol-branco", f"PARCIAL/{tipo_base.capitalize()}"
-            resumo["AVISO"] += 1
-        else: resumo["OK"] += 1
-    else: resumo["OK"] += 1
-
+        
     processados.append({
         "id_html": formatar_id_visual(at['id']), "n": at['n'], 
         "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
     })
 
-# 3. Cabeçalho e Grid
-st.markdown(f"""
-    <div class="kpi-row">
-        <div style="display: flex; gap: 20px;">
-            <div class="kpi-unit"><b style="color:#2ecc71; font-size:1.6rem;">{resumo['OK']}</b> <small style="color:#a0aec0;">OK</small></div>
-            <div class="kpi-unit"><b style="color:#ff8c00; font-size:1.6rem;">{resumo['AVISO']}</b> <small style="color:#a0aec0;">AVISO</small></div>
-            <div class="kpi-unit"><b style="color:#ff0000; font-size:1.6rem;">{resumo['STOP']}</b> <small style="color:#a0aec0;">STOP</small></div>
-        </div>
-        <div style="color: #90cdf4; font-weight: 800; font-size: 2rem;">{datetime.now().strftime("%H:%M:%S")}</div>
-    </div>
-    """, unsafe_allow_html=True)
-
+# 3. Grid de Máquinas (Sem cabeçalho, direto ao ponto)
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
