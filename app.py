@@ -3,26 +3,25 @@ import requests
 from datetime import datetime
 import re
 
-# 1. Configuração de Layout
+# 1. Configuração de Layout e Estilos
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
 st.markdown("""
     <style>
     .block-container { 
-        padding-top: 0.5rem !important; 
-        padding-bottom: 0rem !important; 
-        padding-left: 0.5rem !important; 
-        padding-right: 0.5rem !important; 
+        padding: 0.5rem !important; 
         max-width: 100% !important;
     }
     .stApp { background-color: #0b0e14; overflow: hidden; }
     
+    /* VERMELHO: Pisca para MÁQUINA PARADA */
     @keyframes piscar-topo {
         0% { border-top-color: #e74c3c; }
         50% { border-top-color: #1a1f29; }
         100% { border-top-color: #e74c3c; }
     }
 
+    /* AMARELO: Fluxo Neon para MÁQ. PAR. PARCIAL ou EM EXECUÇÃO */
     @keyframes fluxo-circular {
         0% { background-position: 0% 50%; }
         100% { background-position: 200% 50%; }
@@ -75,7 +74,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Lista de Ativos - ATUALIZADA (HT 1316 no lugar da Empilhadeira)
+# 2. Lista de Ativos (Atualizada: HT 1316 inserida)
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -96,8 +95,10 @@ def formatar_id_visual(id_bruto):
         return f'<span class="id-letras">{letras}</span><span class="id-numeros">{numeros}</span>'
     return f'<span class="id-numeros">{limpo}</span>'
 
+# 3. Lógica de Captura (Fiel ao Relatório)
 def buscar_dados():
     try:
+        # Simulando a leitura da string que vem do banco de dados (baseado no seu relatório)
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
         return r.text.upper() if r.text else ""
     except: return ""
@@ -112,13 +113,17 @@ for at in ativos:
     status, cor, classe, icon, s_nome = "NORMAL", "#2ecc71", "", "✅", "OPERANDO"
     
     if pos != -1:
-        ctx = string_bruta[pos : pos + 80]
-        # Lógica de prioridade: Parada > Parcial
-        if "PARADA" in ctx or "MÁQUINA PARADA" in ctx:
+        # Pega o contexto da O.S.
+        ctx = string_bruta[pos : pos + 150]
+        
+        # PRIORIDADE 1: Máquina Parada (Vermelho)
+        if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, paradas = "PARADA", "#e74c3c", "blink-top", "🛑", paradas + 1
-        elif any(x in ctx for x in ["CIVIL", "PARCIAL", "MÁQ.PAR.PARCIAL"]):
+        # PRIORIDADE 2: Máquina Parada Parcial ou Em Execução (Amarelo)
+        elif any(x in ctx for x in ["MÁQ.PAR.PARCIAL", "EM EXECUÇÃO"]):
             status, cor, icon, parciais, classe = "AVISO", "#f1c40f", "⚠️", parciais + 1, "flow-top"
         
+        # Identificação da Equipe
         if "CIVIL" in ctx: s_nome = "CIVIL"
         elif "ELETRICA" in ctx: s_nome = "ELÉTRICA"
         elif "MECANICA" in ctx: s_nome = "MECÂNICA"
@@ -129,7 +134,7 @@ for at in ativos:
         "classe": classe, "icon": icon, "s_nome": s_nome
     })
 
-# 3. Cabeçalho e Grid
+# 4. Interface
 agora = datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
     <div class="kpi-row">
