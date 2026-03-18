@@ -2,11 +2,11 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-# 1. Configuração de Página e Refresh
+# 1. Configuração e Auto-Refresh
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 30000);</script>", height=0)
 
-# 2. CSS - Ajustes visuais (Espaço no topo e fontes)
+# 2. CSS (Espaçamento superior e fontes nítidas)
 st.markdown("""
     <style>
     .block-container { padding-top: 5.5rem !important; max-width: 98% !important; margin: 0 auto; }
@@ -22,20 +22,20 @@ st.markdown("""
     .id-numeros { font-size: 2.3rem; font-weight: 900; color: #ffffff; line-height: 1; letter-spacing: -1px; }
     .status-area { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; margin: 6px 0; }
     .tag-servico { color: #ffffff; font-weight: bold; font-size: 0.7rem; background: #334155; border-radius: 3px; padding: 3px 0; width: 92%; }
-    .border-normal { border-top-color: #2ecc71 !important; }
-    .border-parada { border-top-color: #ff0000 !important; }
+    
+    /* Cores das Bordas */
+    .border-verde { border-top-color: #2ecc71 !important; }
+    .border-vermelho { border-top-color: #ff0000 !important; }
+    .border-laranja { border-top-color: #ff8c00 !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. Busca de Dados do Firebase
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
-        # Removemos espaços extras e forçamos maiúsculas para a busca ser exata
-        return " ".join(r.text.upper().split()) if r.text else ""
+        return r.text.upper() if r.text else ""
     except: return ""
 
-# Lista de Ativos
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -51,16 +51,19 @@ string_bruta = buscar_dados()
 cols = st.columns(8)
 
 for idx, at in enumerate(ativos):
-    # REGRA DE OURO: TUDO COMEÇA VERDE
-    status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM OPERAÇÃO"
+    # REGRA: PADRÃO SEMPRE VERDE
+    status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-verde", "✅", "EM OPERAÇÃO"
     
-    # BUSCA CIRÚRGICA:
-    # Só fica vermelho se o ID da máquina e a frase MÁQUINA PARADA estiverem próximos (até 150 caracteres)
-    pos_maquina = string_bruta.find(at['id'])
-    if pos_maquina != -1:
-        trecho_maquina = string_bruta[pos_maquina : pos_maquina + 200]
-        if "MÁQUINA PARADA" in trecho_maquina:
-            status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-parada", "🛑", "CORRETIVA"
+    pos = string_bruta.find(at['id'])
+    if pos != -1:
+        # Analisa o trecho de texto da máquina
+        ctx = string_bruta[pos : pos + 250]
+        
+        # SÓ MUDA SE ENCONTRAR ESSAS PALAVRAS ESPECÍFICAS
+        if "MÁQUINA PARADA" in ctx:
+            status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-vermelho", "🛑", "CORRETIVA"
+        elif "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
+            status, cor, classe, icon, servico = "PARCIAL", "#ff8c00", "border-laranja", "⚠️", "AVISO"
 
     id_exibicao = at['id'].replace("_", "").replace("QUIMICO", "")
 
