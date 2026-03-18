@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 from datetime import datetime
-import re
 
 # 1. Configuração da Página
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
@@ -14,7 +13,7 @@ st.components.v1.html(
 
 agora = datetime.now().strftime("%H:%M:%S")
 
-# 2. CSS com Correção de Letras e Espaçamento Superior
+# 2. CSS com Correção de Letras, Espaçamento Superior e Cores
 st.markdown(f"""
     <style>
     .block-container {{ 
@@ -48,7 +47,6 @@ st.markdown(f"""
         border-top: 7px solid;
     }}
 
-    /* Ajuste de Letras para não encavalar */
     .nome-topo {{ 
         color: #a0aec0; 
         font-size: 0.65rem; 
@@ -92,7 +90,7 @@ st.markdown(f"""
     <div class="timer-container">⏱️ ATUALIZADO EM: {agora}</div>
     """, unsafe_allow_html=True)
 
-# 3. Função de Busca
+# 3. Função de Busca de Dados
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -115,23 +113,23 @@ ativos = [
 string_bruta = buscar_dados()
 cols = st.columns(8)
 
-# 4. Processamento com a Nova Regra Blindada
+# 4. Processamento com Filtragem Estrita
 for idx, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
     
-    # REGRA: O PADRÃO É SEMPRE VERDE.
+    # PADRÃO É SEMPRE VERDE
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM OPERAÇÃO"
     
     if pos != -1:
-        # Analisa o texto específico daquela máquina
+        # Analisamos apenas as informações de prioridade próximas ao ID
         ctx = string_bruta[pos : pos + 400]
         
-        # SÓ MUDA SE O TEXTO DISSER EXATAMENTE UM DESSES DOIS:
+        # VERIFICAÇÃO DE PRIORIDADE EXATA
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-parada", "🛑", "CORRETIVA"
         elif "MÁQ.PAR.PARCIAL" in ctx:
             status, cor, classe, icon, servico = "AVISO", "#ff8c00", "farol-aviso", "⚠️", "PARCIAL"
-        # Se disser "Normal" (como o Químico), ele ignora os IFs acima e continua VERDE.
+        # Se for "Normal" ou "Alta" (CIPA), ignora os IFs e permanece VERDE
 
     id_limpo = at['id'].replace("_", "").replace("QUIMICO", "")
 
@@ -140,7 +138,7 @@ for idx, at in enumerate(ativos):
             <div class="card {classe}">
                 <div class="nome-topo">{at['n']}</div>
                 <div class="id-container">
-                    <span class="id-numeros">{id_limpo}</span>
+                    <span class="id-numeros">{id_exibicao if 'id_exibicao' in locals() else id_limpo}</span>
                 </div>
                 <div class="status-area" style="color: {cor};">{icon} {status}</div>
                 <div class="tag-servico">{servico}</div>
