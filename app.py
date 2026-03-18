@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 import re
 
-# 1. Configurações de UI
+# 1. Configurações de UI - Bordas Niveladas e Robustas
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
 st.markdown("""
@@ -11,37 +11,73 @@ st.markdown("""
     .block-container { padding: 0.5rem !important; max-width: 100% !important; }
     .stApp { background-color: #0b0e14; overflow: hidden; }
     
-    @keyframes piscar-topo { 0% { border-top-color: #e74c3c; } 50% { border-top-color: #1a1f29; } 100% { border-top-color: #e74c3c; } }
-    @keyframes efeito-farol-lento { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    /* STOP: Agora pisca entre dois tons de vermelho para manter a espessura visual */
+    @keyframes piscar-robusto { 
+        0% { border-top-color: #ff0000; } 
+        50% { border-top-color: #660000; } 
+        100% { border-top-color: #ff0000; } 
+    }
+
+    /* AVISO: Farol Branco Lento */
+    @keyframes efeito-farol-lento { 
+        0% { background-position: -200% 0; } 
+        100% { background-position: 200% 0; } 
+    }
 
     .card {
-        background-color: #1a1f29; padding: 10px 5px; border-radius: 4px;
-        text-align: center; margin-bottom: 5px; min-height: 160px; 
-        border-top: 8px solid; display: flex; flex-direction: column;
-        justify-content: space-between; border: 1px solid #232a37;
+        background-color: #1a1f29; 
+        padding: 10px 5px; 
+        border-radius: 4px;
+        text-align: center; 
+        margin-bottom: 5px; 
+        min-height: 165px; 
+        /* Aumentado para 10px para todas as bordas ficarem iguais e fortes */
+        border-top: 10px solid; 
+        display: flex; 
+        flex-direction: column;
+        justify-content: space-between;
+        border-right: 1px solid #232a37;
+        border-left: 1px solid #232a37;
+        border-bottom: 1px solid #232a37;
     }
 
-    .blink-top { animation: piscar-topo 0.8s infinite; }
+    /* Classe STOP com borda grossa e pulsante */
+    .blink-top { 
+        border-top: 10px solid #ff0000 !important; 
+        animation: piscar-robusto 0.8s infinite; 
+    }
+
+    /* Classe AVISO (Farol) */
     .farol-branco { 
-        border-top: 8px solid transparent !important;
-        background-image: linear-gradient(#1a1f29, #1a1f29), linear-gradient(90deg, #ff8c00 35%, #ffffff 50%, #ff8c00 65%);
-        background-origin: border-box; background-clip: padding-box, border-box;
-        background-size: 200% 100%; animation: efeito-farol-lento 3s linear infinite; 
+        border-top: 10px solid transparent !important;
+        background-image: linear-gradient(#1a1f29, #1a1f29), 
+                          linear-gradient(90deg, #ff8c00 35%, #ffffff 50%, #ff8c00 65%);
+        background-origin: border-box;
+        background-clip: padding-box, border-box;
+        background-size: 200% 100%;
+        animation: efeito-farol-lento 3s linear infinite; 
     }
 
+    /* Tipografia Fiel: Letras pequenas, Números Gigantes */
     .nome-topo { color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
     .id-container { color: #ffffff; line-height: 1; margin: 2px 0; }
-    .id-letras { font-size: 1.1rem; font-weight: 700; vertical-align: middle; opacity: 0.5; }
-    .id-numeros { font-size: 2.8rem; font-weight: 900; vertical-align: middle; }
-    .status-area { font-weight: 900; font-size: 1rem; text-transform: uppercase; margin-top: 5px; }
-    .tag-servico { color: #a0aec0 !important; font-weight: bold; font-size: 0.8rem; background: #232a37; border-radius: 3px; padding: 4px 0; }
+    .id-letras { font-size: 1.1rem; font-weight: 700; vertical-align: middle; opacity: 0.5; margin-right: 2px; }
+    .id-numeros { font-size: 3rem; font-weight: 900; vertical-align: middle; }
+    
+    .status-area { font-weight: 900; font-size: 1.1rem; text-transform: uppercase; margin-top: 5px; }
+    .tag-servico { 
+        color: #ffffff !important; font-weight: bold; font-size: 0.85rem; 
+        background: #334155; border-radius: 3px; padding: 4px 0;
+    }
     
     .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .kpi-unit { background: #1a1f29; padding: 6px 15px; border-radius: 6px; border: 1px solid #2d3748; display: flex; gap: 10px; }
+    .kpi-unit { background: #1a1f29; padding: 8px 20px; border-radius: 6px; border: 1px solid #2d3748; display: flex; gap: 10px; }
+
+    [data-testid="column"] { padding: 2px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Ativos
+# 2. Ativos (HT 1316 presente)
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -76,54 +112,52 @@ for at in ativos:
     pos = string_bruta.rfind(at['id'])
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "", "✅", "EM OPERAÇÃO"
     
-    # Exceção específica solicitada: Quimico (1602) deve ser verde mesmo com OS de cozinha auxiliar
-    if at['id'] == "QUIMICO_1602":
-        pos = -1 
+    # Regra Quimico (1602)
+    if at['id'] == "QUIMICO_1602": pos = -1 
 
     if pos != -1:
         ctx = string_bruta[pos : pos + 200]
         
-        # 1. Definição do Serviço (Prioridade para o Tipo de OS)
+        # Define Serviço
         if "CONSERTO" in ctx: servico = "CONSERTO"
         elif "ADEQUAÇÃO" in ctx: servico = "ADEQUAÇÃO"
         elif "CIVIL" in ctx: servico = "CIVIL"
         elif "ELETRICA" in ctx: servico = "ELÉTRICA"
         elif "MECANICA" in ctx: servico = "MECÂNICA"
 
-        # 2. Definição da Cor baseada na Condição Real
+        # Define Estado (HT 1316 cairá aqui como STOP)
         if "MÁQUINA PARADA" in ctx:
-            status, cor, classe, icon = "PARADA", "#e74c3c", "blink-top", "🛑"
+            status, cor, classe, icon = "PARADA", "#ff0000", "blink-top", "🛑"
             resumo["STOP"] += 1
         elif any(x in ctx for x in ["MÁQ.PAR.PARCIAL", "PARCIAL"]):
             status, cor, icon, classe = "AVISO", "#ff8c00", "⚠️", "farol-branco"
             resumo["AVISO"] += 1
-        else:
-            resumo["OK"] += 1
-    else:
-        resumo["OK"] += 1
+        else: resumo["OK"] += 1
+    else: resumo["OK"] += 1
 
     processados.append({
         "id_html": formatar_id_visual(at['id']), "n": at['n'], 
         "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
     })
 
-# 3. Renderização
+# 3. Cabeçalho e Grid
 st.markdown(f"""
     <div class="kpi-row">
-        <div style="display: flex; gap: 12px;">
-            <div class="kpi-unit"><b style="color:#2ecc71;">{resumo['OK']}</b> <small style="color:#a0aec0;">OK</small></div>
-            <div class="kpi-unit"><b style="color:#ff8c00;">{resumo['AVISO']}</b> <small style="color:#a0aec0;">AVISO</small></div>
-            <div class="kpi-unit"><b style="color:#e74c3c;">{resumo['STOP']}</b> <small style="color:#a0aec0;">STOP</small></div>
+        <div style="display: flex; gap: 15px;">
+            <div class="kpi-unit"><b style="color:#2ecc71; font-size:1.4rem;">{resumo['OK']}</b> <small style="color:#a0aec0;">OK</small></div>
+            <div class="kpi-unit"><b style="color:#ff8c00; font-size:1.4rem;">{resumo['AVISO']}</b> <small style="color:#a0aec0;">AVISO</small></div>
+            <div class="kpi-unit"><b style="color:#ff0000; font-size:1.4rem;">{resumo['STOP']}</b> <small style="color:#a0aec0;">STOP</small></div>
         </div>
-        <div style="color: #90cdf4; font-weight: 800; font-size: 1.6rem;">{datetime.now().strftime("%H:%M:%S")}</div>
+        <div style="color: #90cdf4; font-weight: 800; font-size: 1.8rem;">{datetime.now().strftime("%H:%M:%S")}</div>
     </div>
     """, unsafe_allow_html=True)
 
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
+        # A borda inline é mantida para o Verde, mas as classes cuidam do Vermelho e Laranja
         st.markdown(f"""
-            <div class="card {m['classe']}" style="border-top-color: {m['cor']};">
+            <div class="card {m['classe']}" style="border-top-color: {m['cor'] if not m['classe'] else 'transparent'};">
                 <div class="nome-topo">{m['n']}</div>
                 <div class="id-container">{m['id_html']}</div>
                 <div class="status-area" style="color: {m['cor']};">{m['icon']} {m['status']}</div>
