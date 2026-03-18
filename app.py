@@ -5,7 +5,7 @@ from datetime import datetime
 # 1. Configuração da Página
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
-# Auto-refresh de 30 segundos
+# Auto-refresh de 30 segundoS
 st.components.v1.html(
     "<script>setTimeout(function(){window.location.reload();}, 30000);</script>",
     height=0,
