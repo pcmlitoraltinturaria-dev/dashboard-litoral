@@ -16,9 +16,9 @@ agora = datetime.now().strftime("%H:%M:%S")
 # 2. CSS - Ajuste de Letras, Espaçamento Superior e Cores
 st.markdown(f"""
     <style>
-    /* Empurra o conteúdo para baixo para não grudar no topo */
+    /* Empurra o conteúdo para baixo (Ajuste solicitado) */
     .block-container {{ 
-        padding-top: 5rem !important; 
+        padding-top: 5.5rem !important; 
         max-width: 98% !important; 
         margin: 0 auto; 
     }}
@@ -48,7 +48,7 @@ st.markdown(f"""
         border-top: 7px solid;
     }}
 
-    /* Ajuste do tamanho das fontes para não encavalar */
+    /* Ajuste do tamanho das fontes (Ajuste solicitado para não encavalar) */
     .nome-topo {{ 
         color: #a0aec0; 
         font-size: 0.65rem; 
@@ -84,7 +84,7 @@ st.markdown(f"""
         text-transform: uppercase;
     }}
 
-    /* Cores das Bordas baseadas no Status */
+    /* Cores das Bordas */
     .border-normal {{ border-top-color: #2ecc71 !important; }} /* VERDE */
     .border-parada {{ border-top-color: #ff0000 !important; }} /* VERMELHO */
 
@@ -96,12 +96,13 @@ st.markdown(f"""
 # 3. Função de Busca de Dados
 def buscar_dados():
     try:
+        # Puxa o texto bruto do seu Firebase
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
         return r.text.upper() if r.text else ""
     except:
         return ""
 
-# Lista Oficial de Ativos
+# Lista Oficial de Ativos (conforme imagem)
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -116,22 +117,23 @@ ativos = [
 string_bruta = buscar_dados()
 cols = st.columns(8)
 
-# 4. Processamento com Regra de Ouro (Sempre Verde exceto se disser Parada)
+# 4. Lógica de Processamento (Regra: Verde por padrão)
 for idx, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
     
-    # PADRÃO INICIAL: SEMPRE VERDE
+    # PADRÃO INICIAL: SEMPRE VERDE (Ajuste para Químico e LK ficarem verdes)
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM OPERAÇÃO"
     
     if pos != -1:
-        # Analisa o contexto da máquina no relatório
+        # Analisa o contexto da máquina no relatório (texto enviado)
         ctx = string_bruta[pos : pos + 400]
         
-        # SÓ MUDA PARA VERMELHO SE ESTIVER ESCRITO "MÁQUINA PARADA"
-        # Ignora "MÁQ.PAR.PARCIAL" ou "NORMAL" ou "ALTA"
+        # SÓ MUDA PARA VERMELHO SE O TEXTO DISSER EXATAMENTE "MÁQUINA PARADA"
+        # Isso corrige o Químico (Normal) e a LK (Parcial) para ficarem Verdes.
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-parada", "🛑", "CORRETIVA"
 
+    # Limpeza do ID para exibição
     id_exibicao = at['id'].replace("_", "").replace("QUIMICO", "")
 
     with cols[idx % 8]:
