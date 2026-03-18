@@ -2,25 +2,25 @@ import streamlit as st
 import requests
 from datetime import datetime
 import re
+from streamlit_autorefresh import st_autorefresh # Precisa instalar: pip install streamlit-autorefresh
 
-# 1. Configuração de UI
+# 1. Configuração de UI e Auto-Refresh (30 segundos)
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
+st_autorefresh(interval=30 * 1000, key="datarefresh")
 
-# Captura o horário da atualização
 agora = datetime.now().strftime("%H:%M:%S")
 
 st.markdown(f"""
     <style>
-    /* Estilo do Contador de Tempo (Posição Fixa no topo vazio) */
     .timer-container {{
         position: absolute;
-        top: -35px; /* Sobe para o espaço vazio do cabeçalho */
+        top: -35px;
         right: 20px;
         color: #718096;
         font-family: monospace;
-        font-size: 0.9rem;
-        background: rgba(26, 31, 41, 0.8);
-        padding: 5px 12px;
+        font-size: 0.85rem;
+        background: rgba(26, 31, 41, 0.9);
+        padding: 4px 12px;
         border-radius: 20px;
         border: 1px solid #2d3748;
         z-index: 999;
@@ -35,7 +35,7 @@ st.markdown(f"""
     .stApp {{ background-color: #0b0e14; }}
     header {{ visibility: hidden; }}
 
-    /* EFEITOS VISUAIS */
+    /* EFEITO FAROL (Linha branca deslizando - 3s) */
     @keyframes efeito-farol {{
         0% {{ background-position: -200% 0; }}
         100% {{ background-position: 200% 0; }}
@@ -59,9 +59,7 @@ st.markdown(f"""
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
-        border-left: 1px solid #232a37;
-        border-right: 1px solid #232a37;
-        border-bottom: 1px solid #232a37;
+        border: 1px solid #232a37;
     }}
 
     .blink-top {{ animation: piscar-vermelho 0.8s infinite; }}
@@ -91,11 +89,11 @@ st.markdown(f"""
     </style>
     
     <div class="timer-container">
-        ⏱️ ÚLTIMA ATUALIZAÇÃO: {agora}
+        ⏱️ ATUALIZADO EM: {agora}
     </div>
     """, unsafe_allow_html=True)
 
-# 2. Lógica de Busca de Dados
+# 2. Dados e Ativos
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -125,11 +123,13 @@ string_bruta = buscar_dados()
 processados = []
 
 for at in ativos:
+    # Busca agora funciona para o Químico também
     pos = string_bruta.rfind(at['id'])
+    
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "", "✅", "EM OPERAÇÃO"
     
     if pos != -1:
-        ctx = string_bruta[pos : pos + 200]
+        ctx = string_bruta[pos : pos + 250]
         tipo = "MANUTENÇÃO"
         for t in ["CONSERTO", "ADEQUAÇÃO", "CIVIL", "ELETRICA", "MECANICA"]:
             if t in ctx: tipo = t.replace("ELETRICA", "ELÉTRICA").replace("MECANICA", "MECÂNICA")
@@ -144,7 +144,7 @@ for at in ativos:
         "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
     })
 
-# 3. Grid
+# 3. Grid (8 colunas)
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
