@@ -14,7 +14,7 @@ st.components.v1.html(
 
 agora = datetime.now().strftime("%H:%M:%S")
 
-# CSS Ajustado para uniformizar a grossura das linhas
+# CSS Unificado para espessura de bordas
 st.markdown(f"""
     <style>
     .timer-container {{
@@ -29,7 +29,6 @@ st.markdown(f"""
     @keyframes efeito-farol {{ 0% {{ background-position: -200% 0; }} 100% {{ background-position: 200% 0; }} }}
     @keyframes piscar-vermelho {{ 0% {{ border-top-color: #ff0000; }} 50% {{ border-top-color: #440000; }} 100% {{ border-top-color: #ff0000; }} }}
 
-    /* Base do Card */
     .card {{
         background-color: #1a1f29; padding: 10px 5px; border-radius: 4px;
         text-align: center; margin-bottom: 10px; min-height: 155px; 
@@ -37,23 +36,18 @@ st.markdown(f"""
         justify-content: space-between; align-items: center; 
         border: 1px solid #232a37;
         box-sizing: border-box;
+        border-top: 7px solid; /* Espessura padrão para todos */
     }}
 
-    /* Linha Normal (Sólida) */
-    .border-normal {{ border-top: 7px solid #2ecc71 !important; }}
+    /* Estilização das bordas por classe */
+    .border-normal {{ border-top-color: #2ecc71 !important; }}
+    .border-parada {{ border-top-color: #ff0000 !important; animation: piscar-vermelho 0.8s infinite; }}
     
-    /* Linha Parada (Piscando) */
-    .blink-top {{ border-top: 7px solid #ff0000 !important; animation: piscar-vermelho 0.8s infinite; }}
-    
-    /* Linha Aviso (Efeito Farol) - Ajustado para parecer ter a mesma grossura */
     .farol-aviso {{
-        border-top: 7px solid transparent !important;
-        background-image: linear-gradient(#1a1f29, #1a1f29), 
-                          linear-gradient(90deg, #ff8c00 30%, #ffffff 50%, #ff8c00 70%);
-        background-origin: border-box;
-        background-clip: padding-box, border-box;
-        background-size: 200% 100%;
-        animation: efeito-farol 3s linear infinite;
+        border-top-color: transparent !important;
+        background-image: linear-gradient(#1a1f29, #1a1f29), linear-gradient(90deg, #ff8c00 30%, #ffffff 50%, #ff8c00 70%);
+        background-origin: border-box; background-clip: padding-box, border-box;
+        background-size: 200% 100%; animation: efeito-farol 3s linear infinite;
     }}
 
     .nome-topo {{ color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }}
@@ -67,7 +61,7 @@ st.markdown(f"""
     <div class="timer-container">⏱️ ATUALIZADO EM: {agora}</div>
     """, unsafe_allow_html=True)
 
-# 2. Dados e Ativos
+# 2. Lógica de Ativos e Busca
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -102,10 +96,15 @@ for at in ativos:
     
     if pos != -1:
         ctx = string_bruta[pos : pos + 350]
+        # Prioridade 1: Parada Total
         if "MÁQUINA PARADA" in ctx and "NORMAL" not in ctx and "EXECUÇÃO" not in ctx:
-            status, cor, classe, icon, servico = "PARADA", "#ff0000", "blink-top", "🛑", "CORRETIVA"
+            status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-parada", "🛑", "CORRETIVA"
+        # Prioridade 2: Parada Parcial (Aviso)
         elif "MÁQ.PAR.PARCIAL" in ctx:
             status, cor, classe, icon, servico = "AVISO", "#ff8c00", "farol-aviso", "⚠️", "PARCIAL"
+        # Prioridade 3: Em execução (Normal Verde)
+        elif "EXECUÇÃO" in ctx:
+            status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM EXECUÇÃO"
 
     processados.append({
         "id_html": formatar_id_visual(at['id']), "n": at['n'], 
@@ -116,7 +115,6 @@ for at in ativos:
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
-        # Removido o style dinâmico de border-top para usar apenas as classes CSS uniformes
         st.markdown(f"""
             <div class="card {m['classe']}">
                 <div class="nome-topo">{m['n']}</div>
