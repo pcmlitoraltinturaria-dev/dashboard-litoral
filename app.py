@@ -1,32 +1,35 @@
 import streamlit as st
 import requests
-from datetime import datetime
+import time
 
 # 1. Configuração de Página
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
-# 2. CSS - Estilo do Botão de Destaque e Cards
+# 2. CSS - Ajuste de Posição (Subindo tudo) e Estilo do Botão
 st.markdown("""
     <style>
-    /* Empurra o conteúdo para baixo */
-    .block-container { padding-top: 5.5rem !important; max-width: 98% !important; margin: 0 auto; }
+    /* Reduz o espaçamento superior ao máximo para subir tudo */
+    .block-container { padding-top: 1rem !important; max-width: 98% !important; margin: 0 auto; }
     .stApp { background-color: #0b0e14; }
     header { visibility: hidden; }
 
-    /* Estilização do Botão de Atualizar para destacar do fundo */
+    /* Botão de Atualizar com destaque e feedback visual */
     div.stButton > button {
-        background-color: #007bff !important; /* Azul vibrante */
+        background-color: #007bff !important;
         color: white !important;
         font-weight: bold !important;
         border-radius: 8px !important;
-        border: none !important;
+        border: 2px solid #0056b3 !important;
         padding: 10px 24px !important;
-        width: 100% !important;
-        box-shadow: 0px 4px 15px rgba(0, 123, 255, 0.4) !important;
+        width: 250px !important;
+        box-shadow: 0px 4px 15px rgba(0, 123, 255, 0.3) !important;
+        transition: all 0.2s ease;
     }
-    div.stButton > button:hover {
-        background-color: #0056b3 !important;
-        border: 1px solid white !important;
+    
+    /* Simulação de clique (efeito visual quando pressionado) */
+    div.stButton > button:active {
+        transform: scale(0.95);
+        background-color: #ff8c00 !important; /* Muda para laranja ao clicar */
     }
 
     /* Cards das Máquinas */
@@ -54,11 +57,11 @@ def buscar_dados():
         return " ".join(r.text.upper().split()) if r.text else ""
     except: return ""
 
-# Cabeçalho com o Botão de Atualizar
-col_btn, col_txt = st.columns([1, 4])
-with col_btn:
-    if st.button("🔄 ATUALIZAR PAINEL"):
-        st.rerun() # Comando para atualizar a página na hora
+# Cabeçalho com Botão e Feedback de Clique
+if st.button("🔄 ATUALIZAR AGORA"):
+    with st.spinner('Atualizando dados...'):
+        time.sleep(0.5) # Pequena pausa para você ver que o botão reagiu
+        st.rerun()
 
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
@@ -79,7 +82,6 @@ for idx, at in enumerate(ativos):
     
     pos = string_bruta.find(at['id'])
     if pos != -1:
-        # Lógica Blindada (olha apenas 60 caracteres após o ID)
         ctx = string_bruta[pos : pos + 60]
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-vermelho", "🛑", "CORRETIVA"
@@ -98,5 +100,5 @@ for idx, at in enumerate(ativos):
             </div>
         """, unsafe_allow_html=True)
 
-# Mantive o refresh automático de 30s também, para caso ninguém clique no botão
+# Mantém o refresh automático silencioso a cada 30s
 st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 30000);</script>", height=0)
