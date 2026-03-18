@@ -3,113 +3,58 @@ import requests
 from datetime import datetime
 import re
 
-# 1. Configuração de UI - Centralização e Layout Limpo
+# 1. Configuração de UI - Tamanho Original e Centralização Vertical
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
 st.markdown("""
     <style>
-    /* Reset de margens do Streamlit para centralizar o conteúdo */
+    /* Ajuste da margem superior para descer os quadros alguns centímetros */
     .block-container { 
-        padding: 1rem 2rem !important; 
-        max-width: 100% !important; 
+        padding-top: 3.5rem !important; 
+        max-width: 95% !important; 
         margin: 0 auto;
     }
     
     .stApp { background-color: #0b0e14; }
     header { visibility: hidden; }
 
-    /* Animações de Status */
+    /* Card com tamanho reduzido (Original) */
+    .card {
+        background-color: #1a1f29; 
+        padding: 10px 5px; 
+        border-radius: 4px;
+        text-align: center; 
+        margin-bottom: 10px; 
+        min-height: 155px; /* Tamanho original menor */
+        border-top: 8px solid; 
+        display: flex; 
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
+        border: 1px solid #232a37;
+    }
+
+    /* Animações */
     @keyframes piscar-robusto { 
         0% { border-top-color: #ff0000; } 
         50% { border-top-color: #660000; } 
         100% { border-top-color: #ff0000; } 
     }
+    .blink-top { border-top: 8px solid #ff0000 !important; animation: piscar-robusto 0.8s infinite; }
 
-    @keyframes efeito-farol-lento { 
-        0% { background-position: -200% 0; } 
-        100% { background-position: 200% 0; } 
-    }
-
-    /* Card Centralizado */
-    .card {
-        background-color: #1a1f29; 
-        padding: 15px 5px; 
-        border-radius: 4px;
-        text-align: center; 
-        margin-bottom: 8px; 
-        min-height: 180px; 
-        border-top: 10px solid; 
-        display: flex; 
-        flex-direction: column;
-        justify-content: center; /* Centraliza verticalmente o conteúdo */
-        align-items: center;     /* Centraliza horizontalmente o conteúdo */
-        border: 1px solid #232a37;
-        width: 100%;
-    }
-
-    .blink-top { 
-        border-top: 10px solid #ff0000 !important; 
-        animation: piscar-robusto 0.8s infinite; 
-    }
-
-    .farol-branco { 
-        border-top: 10px solid transparent !important;
-        background-image: linear-gradient(#1a1f29, #1a1f29), 
-                          linear-gradient(90deg, #ff8c00 35%, #ffffff 50%, #ff8c00 65%);
-        background-origin: border-box;
-        background-clip: padding-box, border-box;
-        background-size: 200% 100%;
-        animation: efeito-farol-lento 3s linear infinite; 
-    }
-
-    /* Tipografia Centralizada */
-    .nome-topo { 
-        color: #a0aec0; 
-        font-size: 0.85rem; 
-        font-weight: 700; 
-        text-transform: uppercase;
-        margin-bottom: 5px;
-    }
+    /* Tipografia ajustada para o quadro menor */
+    .nome-topo { color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+    .id-container { color: #ffffff; line-height: 1; margin: 5px 0; }
+    .id-letras { font-size: 1.1rem; font-weight: 700; opacity: 0.5; }
+    .id-numeros { font-size: 3rem; font-weight: 900; }
     
-    .id-container { 
-        color: #ffffff; 
-        line-height: 1; 
-        margin: 10px 0;
-        display: flex;
-        justify-content: center;
-        align-items: baseline;
-    }
-    
-    .id-letras { font-size: 1.3rem; font-weight: 700; opacity: 0.6; margin-right: 4px; }
-    .id-numeros { font-size: 3.5rem; font-weight: 900; }
-    
-    .status-area { 
-        font-weight: 900; 
-        font-size: 1.1rem; 
-        text-transform: uppercase; 
-        margin: 8px 0;
-        display: flex;
-        align-items: center;
-        gap: 5px;
-    }
-    
+    .status-area { font-weight: 900; font-size: 0.9rem; text-transform: uppercase; margin: 4px 0; }
     .tag-servico { 
-        color: #ffffff !important; 
-        font-weight: bold; 
-        font-size: 0.85rem; 
-        background: #334155; 
-        border-radius: 3px; 
-        padding: 6px 12px;
-        width: 90%;
-        text-align: center;
+        color: #ffffff !important; font-weight: bold; font-size: 0.75rem; 
+        background: #334155; border-radius: 3px; padding: 3px 0; width: 90%;
     }
 
-    /* Grid layout */
-    [data-testid="column"] { 
-        display: flex;
-        justify-content: center;
-        padding: 4px !important; 
-    }
+    [data-testid="column"] { padding: 3px !important; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -121,7 +66,7 @@ ativos = [
     {"id": "_1202", "n": "LK"}, {"id": "1404", "n": "HIDRORELAX"}, {"id": "1601", "n": "CORANTE"},
     {"id": "QUIMICO_1602", "n": "QUÍMICO"}, {"id": "1306", "n": "HT 1306"}, {"id": "1311", "n": "HT 1311"},
     {"id": "1314", "n": "HT 1314"}, {"id": "HT_1324", "n": "HT 1324"}, {"id": "HT_1308", "n": "HT 1308"},
-    {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}, {"id": "1001", "font-size": "FELP 1"},
+    {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}, {"id": "1001", "n": "FELP 1"},
     {"id": "1002", "n": "FELP 2"}, {"id": "2603", "n": "SECADOR"}, {"id": "HT_1316", "n": "HT 1316"}
 ]
 
@@ -162,11 +107,11 @@ for at in ativos:
             status, cor, icon, classe, servico = "AVISO", "#ff8c00", "⚠️", "farol-branco", f"PARCIAL/{tipo_base.capitalize()}"
         
     processados.append({
-        "id_html": formatar_id_visual(at['id']), "n": at.get('n', ""), 
+        "id_html": formatar_id_visual(at['id']), "n": at['n'], 
         "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
     })
 
-# 3. Renderização do Grid Centralizado
+# 3. Grid
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
@@ -174,10 +119,7 @@ for idx, m in enumerate(processados):
             <div class="card {m['classe']}" style="border-top-color: {m['cor'] if not m['classe'] else 'transparent'};">
                 <div class="nome-topo">{m['n']}</div>
                 <div class="id-container">{m['id_html']}</div>
-                <div class="status-area" style="color: {m['cor']};">
-                    <span>{m['icon']}</span>
-                    <span>{m['status']}</span>
-                </div>
+                <div class="status-area" style="color: {m['cor']};">{m['icon']} {m['status']}</div>
                 <div class="tag-servico">{m['servico']}</div>
             </div>
         """, unsafe_allow_html=True)
