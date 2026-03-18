@@ -3,14 +3,13 @@ import requests
 from datetime import datetime
 import re
 
-# 1. Configuração de UI - Tamanho Original e Centralização Vertical
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
+# 1. CSS Corrigido: Agora com suporte para a borda de AVISO (Laranja)
 st.markdown("""
     <style>
-    /* Ajuste da margem superior para descer os quadros alguns centímetros */
     .block-container { 
-        padding-top: 3.5rem !important; 
+        padding-top: 4rem !important; /* Mantém os quadros baixos */
         max-width: 95% !important; 
         margin: 0 auto;
     }
@@ -18,31 +17,39 @@ st.markdown("""
     .stApp { background-color: #0b0e14; }
     header { visibility: hidden; }
 
-    /* Card com tamanho reduzido (Original) */
     .card {
         background-color: #1a1f29; 
         padding: 10px 5px; 
         border-radius: 4px;
         text-align: center; 
         margin-bottom: 10px; 
-        min-height: 155px; /* Tamanho original menor */
-        border-top: 8px solid; 
+        min-height: 155px; /* Tamanho original compacto */
+        border-top: 8px solid; /* A linha voltou! */
         display: flex; 
         flex-direction: column;
         justify-content: space-between;
         align-items: center;
-        border: 1px solid #232a37;
+        border-left: 1px solid #232a37;
+        border-right: 1px solid #232a37;
+        border-bottom: 1px solid #232a37;
     }
 
-    /* Animações */
-    @keyframes piscar-robusto { 
+    /* Animação para Parada (Vermelho) */
+    @keyframes piscar-vermelho { 
         0% { border-top-color: #ff0000; } 
-        50% { border-top-color: #660000; } 
+        50% { border-top-color: #440000; } 
         100% { border-top-color: #ff0000; } 
     }
-    .blink-top { border-top: 8px solid #ff0000 !important; animation: piscar-robusto 0.8s infinite; }
+    .blink-top { animation: piscar-vermelho 0.8s infinite; }
 
-    /* Tipografia ajustada para o quadro menor */
+    /* Animação para Aviso (Laranja) */
+    @keyframes piscar-laranja { 
+        0% { border-top-color: #ff8c00; } 
+        50% { border-top-color: #442200; } 
+        100% { border-top-color: #ff8c00; } 
+    }
+    .blink-aviso { animation: piscar-laranja 1.2s infinite; }
+
     .nome-topo { color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
     .id-container { color: #ffffff; line-height: 1; margin: 5px 0; }
     .id-letras { font-size: 1.1rem; font-weight: 700; opacity: 0.5; }
@@ -58,7 +65,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Lista de Ativos
+# ... (Parte da lista de ativos e função formatar_id_visual permanecem iguais)
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -90,21 +97,18 @@ processados = []
 for at in ativos:
     pos = string_bruta.rfind(at['id'])
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "", "✅", "EM OPERAÇÃO"
-    if at['id'] == "QUIMICO_1602": pos = -1 
-
+    
     if pos != -1:
         ctx = string_bruta[pos : pos + 200]
-        tipo_base = "MANUTENÇÃO"
-        if "CONSERTO" in ctx: tipo_base = "CONSERTO"
-        elif "ADEQUAÇÃO" in ctx: tipo_base = "ADEQUAÇÃO"
-        elif "CIVIL" in ctx: tipo_base = "CIVIL"
-        elif "ELETRICA" in ctx: tipo_base = "ELÉTRICA"
-        elif "MECANICA" in ctx: tipo_base = "MECÂNICA"
+        # Lógica de tipo de serviço
+        tipo = "MANUTENÇÃO"
+        for t in ["CONSERTO", "ADEQUAÇÃO", "CIVIL", "ELETRICA", "MECANICA"]:
+            if t in ctx: tipo = t.replace("ELETRICA", "ELÉTRICA").replace("MECANICA", "MECÂNICA")
 
         if "MÁQUINA PARADA" in ctx:
-            status, cor, classe, icon, servico = "PARADA", "#ff0000", "blink-top", "🛑", tipo_base
+            status, cor, classe, icon, servico = "PARADA", "#ff0000", "blink-top", "🛑", tipo
         elif any(x in ctx for x in ["MÁQ.PAR.PARCIAL", "PARCIAL"]):
-            status, cor, icon, classe, servico = "AVISO", "#ff8c00", "⚠️", "farol-branco", f"PARCIAL/{tipo_base.capitalize()}"
+            status, cor, classe, icon, servico = "AVISO", "#ff8c00", "blink-aviso", "⚠️", f"PARCIAL/{tipo.capitalize()}"
         
     processados.append({
         "id_html": formatar_id_visual(at['id']), "n": at['n'], 
@@ -115,8 +119,9 @@ for at in ativos:
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
+        # A borda agora é controlada pela cor dinâmica m['cor']
         st.markdown(f"""
-            <div class="card {m['classe']}" style="border-top-color: {m['cor'] if not m['classe'] else 'transparent'};">
+            <div class="card {m['classe']}" style="border-top-color: {m['cor']};">
                 <div class="nome-topo">{m['n']}</div>
                 <div class="id-container">{m['id_html']}</div>
                 <div class="status-area" style="color: {m['cor']};">{m['icon']} {m['status']}</div>
