@@ -6,38 +6,54 @@ import re
 # 1. Configuração de UI
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
-st.markdown("""
+# Captura o horário da atualização
+agora = datetime.now().strftime("%H:%M:%S")
+
+st.markdown(f"""
     <style>
-    /* Ajuste para baixar os quadros alguns centímetros do topo */
-    .block-container { 
+    /* Estilo do Contador de Tempo (Posição Fixa no topo vazio) */
+    .timer-container {{
+        position: absolute;
+        top: -35px; /* Sobe para o espaço vazio do cabeçalho */
+        right: 20px;
+        color: #718096;
+        font-family: monospace;
+        font-size: 0.9rem;
+        background: rgba(26, 31, 41, 0.8);
+        padding: 5px 12px;
+        border-radius: 20px;
+        border: 1px solid #2d3748;
+        z-index: 999;
+    }}
+
+    .block-container {{ 
         padding-top: 4rem !important; 
         max-width: 95% !important; 
         margin: 0 auto;
-    }
+    }}
     
-    .stApp { background-color: #0b0e14; }
-    header { visibility: hidden; }
+    .stApp {{ background-color: #0b0e14; }}
+    header {{ visibility: hidden; }}
 
-    /* EFEITO FAROL (Linha branca passando suave) */
-    @keyframes efeito-farol {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-    }
+    /* EFEITOS VISUAIS */
+    @keyframes efeito-farol {{
+        0% {{ background-position: -200% 0; }}
+        100% {{ background-position: 200% 0; }}
+    }}
 
-    /* PISCAR ROBUSTO (Para Máquina Parada) */
-    @keyframes piscar-vermelho { 
-        0% { border-top-color: #ff0000; } 
-        50% { border-top-color: #440000; } 
-        100% { border-top-color: #ff0000; } 
-    }
+    @keyframes piscar-vermelho {{ 
+        0% {{ border-top-color: #ff0000; }} 
+        50% {{ border-top-color: #440000; }} 
+        100% {{ border-top-color: #ff0000; }} 
+    }}
 
-    .card {
+    .card {{
         background-color: #1a1f29; 
         padding: 10px 5px; 
         border-radius: 4px;
         text-align: center; 
         margin-bottom: 10px; 
-        min-height: 155px; /* Tamanho compacto original */
+        min-height: 155px; 
         border-top: 8px solid; 
         display: flex; 
         flex-direction: column;
@@ -46,13 +62,11 @@ st.markdown("""
         border-left: 1px solid #232a37;
         border-right: 1px solid #232a37;
         border-bottom: 1px solid #232a37;
-    }
+    }}
 
-    /* Classe para MÁQUINA PARADA */
-    .blink-top { animation: piscar-vermelho 0.8s infinite; }
-
-    /* Classe para AVISO/PARCIAL (Efeito da linha branca deslizando) */
-    .farol-aviso {
+    .blink-top {{ animation: piscar-vermelho 0.8s infinite; }}
+    
+    .farol-aviso {{
         border-top: 8px solid transparent !important;
         background-image: linear-gradient(#1a1f29, #1a1f29), 
                           linear-gradient(90deg, #ff8c00 30%, #ffffff 50%, #ff8c00 70%);
@@ -60,25 +74,34 @@ st.markdown("""
         background-clip: padding-box, border-box;
         background-size: 200% 100%;
         animation: efeito-farol 3s linear infinite;
-    }
+    }}
 
-    /* Tipografia */
-    .nome-topo { color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-    .id-container { color: #ffffff; line-height: 1; margin: 5px 0; }
-    .id-letras { font-size: 1.1rem; font-weight: 700; opacity: 0.5; }
-    .id-numeros { font-size: 3rem; font-weight: 900; }
+    .nome-topo {{ color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }}
+    .id-container {{ color: #ffffff; line-height: 1; margin: 5px 0; }}
+    .id-letras {{ font-size: 1.1rem; font-weight: 700; opacity: 0.5; }}
+    .id-numeros {{ font-size: 3rem; font-weight: 900; }}
     
-    .status-area { font-weight: 900; font-size: 0.9rem; text-transform: uppercase; margin: 4px 0; }
-    .tag-servico { 
+    .status-area {{ font-weight: 900; font-size: 0.9rem; text-transform: uppercase; margin: 4px 0; }}
+    .tag-servico {{ 
         color: #ffffff !important; font-weight: bold; font-size: 0.75rem; 
         background: #334155; border-radius: 3px; padding: 3px 0; width: 90%;
-    }
+    }}
 
-    [data-testid="column"] { padding: 3px !important; }
+    [data-testid="column"] {{ padding: 3px !important; }}
     </style>
+    
+    <div class="timer-container">
+        ⏱️ ÚLTIMA ATUALIZAÇÃO: {agora}
+    </div>
     """, unsafe_allow_html=True)
 
-# 2. Lógica de Ativos e Dados
+# 2. Lógica de Busca de Dados
+def buscar_dados():
+    try:
+        r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
+        return r.text.upper() if r.text else ""
+    except: return ""
+
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -97,12 +120,6 @@ def formatar_id_visual(id_bruto):
         letras = f'<span class="id-letras">{match.group(1)}</span>' if match.group(1) else ""
         return f'{letras}<span class="id-numeros">{match.group(2)}</span>'
     return f'<span class="id-numeros">{limpo}</span>'
-
-def buscar_dados():
-    try:
-        r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
-        return r.text.upper() if r.text else ""
-    except: return ""
 
 string_bruta = buscar_dados()
 processados = []
@@ -127,7 +144,7 @@ for at in ativos:
         "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
     })
 
-# 3. Grid Centralizado com os movimentos restaurados
+# 3. Grid
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
