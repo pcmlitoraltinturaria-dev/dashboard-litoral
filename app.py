@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 import re
 
-# Configuração de UI
+# 1. Configuração de UI
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
 # Refresh Automático Nativo (30 segundos)
@@ -14,7 +14,7 @@ st.components.v1.html(
 
 agora = datetime.now().strftime("%H:%M:%S")
 
-# CSS com efeitos de movimento
+# CSS corrigido para não conflitar com as variáveis do Python
 st.markdown(f"""
     <style>
     .timer-container {{
@@ -53,7 +53,7 @@ st.markdown(f"""
     <div class="timer-container">⏱️ ATUALIZADO EM: {agora}</div>
     """, unsafe_allow_html=True)
 
-# Lógica de Busca de Dados
+# 2. Lógica de Ativos
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
@@ -75,9 +75,9 @@ def formatar_id_visual(id_bruto):
     limpo = id_bruto.replace("_", "").replace("QUIMICO", "")
     match = re.match(r"([a-zA-Z]+)?(\d+)", limpo)
     if match:
-        letras = f'<span class="id-letras">{{match.group(1)}}</span>' if match.group(1) else ""
-        return f'{{letras}}<span class="id-numeros">{{match.group(2)}}</span>'
-    return f'<span class="id-numeros">{{limpo}}</span>'
+        letras = f'<span class="id-letras">{match.group(1)}</span>' if match.group(1) else ""
+        return f"{letras}<span class='id-numeros'>{match.group(2)}</span>"
+    return f"<span class='id-numeros'>{limpo}</span>"
 
 string_bruta = buscar_dados()
 processados = []
@@ -87,30 +87,27 @@ for at in ativos:
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "", "✅", "EM OPERAÇÃO"
     
     if pos != -1:
-        ctx = string_bruta[pos : pos + 350] # Contexto ampliado
-        
-        # Lógica rigorosa de status baseada no seu relatório
-        if "MÁQUINA PARADA" in ctx and "NORMAL" not in ctx:
+        ctx = string_bruta[pos : pos + 350]
+        # Lógica estrita: Só fica parado se tiver "MÁQUINA PARADA" e NÃO tiver "NORMAL" ou "EM EXECUÇÃO"
+        if "MÁQUINA PARADA" in ctx and "NORMAL" not in ctx and "EXECUÇÃO" not in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "blink-top", "🛑", "CORRETIVA"
         elif "MÁQ.PAR.PARCIAL" in ctx:
             status, cor, classe, icon, servico = "AVISO", "#ff8c00", "farol-aviso", "⚠️", "PARCIAL"
-        elif "NORMAL" in ctx or "EM EXECUÇÃO" in ctx:
-            status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "", "✅", "EM OPERAÇÃO"
 
     processados.append({
         "id_html": formatar_id_visual(at['id']), "n": at['n'], 
         "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
     })
 
-# Renderização do Grid
+# 3. Renderização
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
         st.markdown(f"""
-            <div class="card {{m['classe']}}" style="border-top-color: {{m['cor'] if not m['classe'] else 'transparent'}};">
-                <div class="nome-topo">{{m['n']}}</div>
-                <div class="id-container">{{m['id_html']}}</div>
-                <div class="status-area" style="color: {{m['cor']}};">{{m['icon']}} {{m['status']}}</div>
-                <div class="tag-servico">{{m['servico']}}</div>
+            <div class="card {m['classe']}" style="border-top-color: {m['cor'] if not m['classe'] else 'transparent'};">
+                <div class="nome-topo">{m['n']}</div>
+                <div class="id-container">{m['id_html']}</div>
+                <div class="status-area" style="color: {m['cor']};">{m['icon']} {m['status']}</div>
+                <div class="tag-servico">{m['servico']}</div>
             </div>
         """, unsafe_allow_html=True)
