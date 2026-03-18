@@ -6,7 +6,7 @@ from datetime import datetime
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 30000);</script>", height=0)
 
-# 2. CSS (Espaçamento superior e fontes nítidas)
+# 2. CSS (Ajuste de fontes e espaçamento)
 st.markdown("""
     <style>
     .block-container { padding-top: 5.5rem !important; max-width: 98% !important; margin: 0 auto; }
@@ -23,7 +23,6 @@ st.markdown("""
     .status-area { font-weight: 800; font-size: 0.85rem; text-transform: uppercase; margin: 6px 0; }
     .tag-servico { color: #ffffff; font-weight: bold; font-size: 0.7rem; background: #334155; border-radius: 3px; padding: 3px 0; width: 92%; }
     
-    /* Cores das Bordas */
     .border-verde { border-top-color: #2ecc71 !important; }
     .border-vermelho { border-top-color: #ff0000 !important; }
     .border-laranja { border-top-color: #ff8c00 !important; }
@@ -33,7 +32,8 @@ st.markdown("""
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
-        return r.text.upper() if r.text else ""
+        # Limpa espaços duplos para busca precisa
+        return " ".join(r.text.upper().split()) if r.text else ""
     except: return ""
 
 ativos = [
@@ -51,18 +51,17 @@ string_bruta = buscar_dados()
 cols = st.columns(8)
 
 for idx, at in enumerate(ativos):
-    # REGRA: PADRÃO SEMPRE VERDE
+    # PADRÃO SEMPRE VERDE
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-verde", "✅", "EM OPERAÇÃO"
     
     pos = string_bruta.find(at['id'])
     if pos != -1:
-        # Analisa o trecho de texto da máquina
-        ctx = string_bruta[pos : pos + 250]
+        # OLHA APENAS OS PRÓXIMOS 60 CARACTERES (Impedindo de ler o status da vizinha)
+        ctx = string_bruta[pos : pos + 60]
         
-        # SÓ MUDA SE ENCONTRAR ESSAS PALAVRAS ESPECÍFICAS
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-vermelho", "🛑", "CORRETIVA"
-        elif "PARCIAL" in ctx or "MÁQ.PAR.PARCIAL" in ctx:
+        elif "PARCIAL" in ctx:
             status, cor, classe, icon, servico = "PARCIAL", "#ff8c00", "border-laranja", "⚠️", "AVISO"
 
     id_exibicao = at['id'].replace("_", "").replace("QUIMICO", "")
