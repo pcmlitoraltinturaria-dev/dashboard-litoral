@@ -13,9 +13,10 @@ st.components.v1.html(
 
 agora = datetime.now().strftime("%H:%M:%S")
 
-# 2. CSS com Correção de Letras, Espaçamento Superior e Cores
+# 2. CSS - Ajuste de Letras, Espaçamento Superior e Cores
 st.markdown(f"""
     <style>
+    /* Empurra o conteúdo para baixo para não grudar no topo */
     .block-container {{ 
         padding-top: 5rem !important; 
         max-width: 98% !important; 
@@ -47,12 +48,14 @@ st.markdown(f"""
         border-top: 7px solid;
     }}
 
+    /* Ajuste do tamanho das fontes para não encavalar */
     .nome-topo {{ 
         color: #a0aec0; 
         font-size: 0.65rem; 
         font-weight: 700; 
         text-transform: uppercase;
         margin-bottom: 4px;
+        white-space: nowrap;
     }}
     
     .id-numeros {{ 
@@ -78,12 +81,12 @@ st.markdown(f"""
         border-radius: 3px; 
         padding: 3px 0; 
         width: 92%; 
+        text-transform: uppercase;
     }}
 
-    /* Cores das Bordas */
-    .border-normal {{ border-top-color: #2ecc71 !important; }}
-    .border-parada {{ border-top-color: #ff0000 !important; }}
-    .farol-aviso {{ border-top-color: #ff8c00 !important; }}
+    /* Cores das Bordas baseadas no Status */
+    .border-normal {{ border-top-color: #2ecc71 !important; }} /* VERDE */
+    .border-parada {{ border-top-color: #ff0000 !important; }} /* VERMELHO */
 
     [data-testid="column"] {{ padding: 3px !important; }}
     </style>
@@ -98,7 +101,7 @@ def buscar_dados():
     except:
         return ""
 
-# Lista de Ativos
+# Lista Oficial de Ativos
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -113,32 +116,30 @@ ativos = [
 string_bruta = buscar_dados()
 cols = st.columns(8)
 
-# 4. Processamento com Filtragem Estrita
+# 4. Processamento com Regra de Ouro (Sempre Verde exceto se disser Parada)
 for idx, at in enumerate(ativos):
     pos = string_bruta.rfind(at['id'])
     
-    # PADRÃO É SEMPRE VERDE
+    # PADRÃO INICIAL: SEMPRE VERDE
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-normal", "✅", "EM OPERAÇÃO"
     
     if pos != -1:
-        # Analisamos apenas as informações de prioridade próximas ao ID
+        # Analisa o contexto da máquina no relatório
         ctx = string_bruta[pos : pos + 400]
         
-        # VERIFICAÇÃO DE PRIORIDADE EXATA
+        # SÓ MUDA PARA VERMELHO SE ESTIVER ESCRITO "MÁQUINA PARADA"
+        # Ignora "MÁQ.PAR.PARCIAL" ou "NORMAL" ou "ALTA"
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-parada", "🛑", "CORRETIVA"
-        elif "MÁQ.PAR.PARCIAL" in ctx:
-            status, cor, classe, icon, servico = "AVISO", "#ff8c00", "farol-aviso", "⚠️", "PARCIAL"
-        # Se for "Normal" ou "Alta" (CIPA), ignora os IFs e permanece VERDE
 
-    id_limpo = at['id'].replace("_", "").replace("QUIMICO", "")
+    id_exibicao = at['id'].replace("_", "").replace("QUIMICO", "")
 
     with cols[idx % 8]:
         st.markdown(f"""
             <div class="card {classe}">
                 <div class="nome-topo">{at['n']}</div>
                 <div class="id-container">
-                    <span class="id-numeros">{id_exibicao if 'id_exibicao' in locals() else id_limpo}</span>
+                    <span class="id-numeros">{id_exibicao}</span>
                 </div>
                 <div class="status-area" style="color: {cor};">{icon} {status}</div>
                 <div class="tag-servico">{servico}</div>
