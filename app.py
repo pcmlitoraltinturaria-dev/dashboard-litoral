@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 import re
 
-# 1. Configuração de Layout e Animações Suavizadas
+# 1. Configurações de UI
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
 st.markdown("""
@@ -11,68 +11,37 @@ st.markdown("""
     .block-container { padding: 0.5rem !important; max-width: 100% !important; }
     .stApp { background-color: #0b0e14; overflow: hidden; }
     
-    /* STOP: Mantém o pisca de 0.8s para urgência */
-    @keyframes piscar-topo { 
-        0% { border-top-color: #e74c3c; } 
-        50% { border-top-color: #1a1f29; } 
-        100% { border-top-color: #e74c3c; } 
-    }
-
-    /* AVISO: Farol Branco mais LENTO (3.0s) para não cansar a vista */
-    @keyframes efeito-farol-lento {
-        0% { background-position: -200% 0; }
-        100% { background-position: 200% 0; }
-    }
+    @keyframes piscar-topo { 0% { border-top-color: #e74c3c; } 50% { border-top-color: #1a1f29; } 100% { border-top-color: #e74c3c; } }
+    @keyframes efeito-farol-lento { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
     .card {
-        background-color: #1a1f29; 
-        padding: 10px 5px; 
-        border-radius: 4px;
-        text-align: center; 
-        margin-bottom: 5px; 
-        min-height: 160px; 
-        border-top: 8px solid;
-        display: flex; 
-        flex-direction: column;
-        justify-content: space-between;
-        border-right: 1px solid #232a37;
-        border-left: 1px solid #232a37;
-        border-bottom: 1px solid #232a37;
+        background-color: #1a1f29; padding: 10px 5px; border-radius: 4px;
+        text-align: center; margin-bottom: 5px; min-height: 160px; 
+        border-top: 8px solid; display: flex; flex-direction: column;
+        justify-content: space-between; border: 1px solid #232a37;
     }
 
     .blink-top { animation: piscar-topo 0.8s infinite; }
-
     .farol-branco { 
         border-top: 8px solid transparent !important;
-        background-image: linear-gradient(#1a1f29, #1a1f29), 
-                          linear-gradient(90deg, #ff8c00 35%, #ffffff 50%, #ff8c00 65%);
-        background-origin: border-box;
-        background-clip: padding-box, border-box;
-        background-size: 200% 100%;
-        /* Aumentado para 3 segundos para um movimento bem suave */
-        animation: efeito-farol-lento 3s linear infinite; 
+        background-image: linear-gradient(#1a1f29, #1a1f29), linear-gradient(90deg, #ff8c00 35%, #ffffff 50%, #ff8c00 65%);
+        background-origin: border-box; background-clip: padding-box, border-box;
+        background-size: 200% 100%; animation: efeito-farol-lento 3s linear infinite; 
     }
 
-    /* Tipografia: Foco total no Número */
     .nome-topo { color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
     .id-container { color: #ffffff; line-height: 1; margin: 2px 0; }
     .id-letras { font-size: 1.1rem; font-weight: 700; vertical-align: middle; opacity: 0.5; }
     .id-numeros { font-size: 2.8rem; font-weight: 900; vertical-align: middle; }
-    
     .status-area { font-weight: 900; font-size: 1rem; text-transform: uppercase; margin-top: 5px; }
-    .tag-manutencao { 
-        color: #a0aec0 !important; font-weight: bold; font-size: 0.8rem; 
-        background: #232a37; border-radius: 3px; padding: 4px 0;
-    }
+    .tag-servico { color: #a0aec0 !important; font-weight: bold; font-size: 0.8rem; background: #232a37; border-radius: 3px; padding: 4px 0; }
     
     .kpi-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .kpi-unit { background: #1a1f29; padding: 6px 15px; border-radius: 6px; border: 1px solid #2d3748; display: flex; gap: 10px; }
-
-    [data-testid="column"] { padding: 2px !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Ativos e Lógica (Inalterados)
+# 2. Ativos
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -105,28 +74,40 @@ processados = []
 
 for at in ativos:
     pos = string_bruta.rfind(at['id'])
-    status, cor, classe, icon, tag = "NORMAL", "#2ecc71", "", "✅", "EM OPERAÇÃO"
+    status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "", "✅", "EM OPERAÇÃO"
     
+    # Exceção específica solicitada: Quimico (1602) deve ser verde mesmo com OS de cozinha auxiliar
+    if at['id'] == "QUIMICO_1602":
+        pos = -1 
+
     if pos != -1:
-        ctx = string_bruta[pos : pos + 150]
-        if "MÁQUINA PARADA" in ctx:
-            status, cor, classe, icon, tag = "PARADA", "#e74c3c", "blink-top", "🛑", "MECÂNICA"
-            resumo["STOP"] += 1
-        elif any(x in ctx for x in ["MÁQ.PAR.PARCIAL", "EM EXECUÇÃO", "PARCIAL"]):
-            status, cor, icon, tag, classe = "AVISO", "#ff8c00", "⚠️", "ATENÇÃO", "farol-branco"
-            resumo["AVISO"] += 1
-        else: resumo["OK"] += 1
+        ctx = string_bruta[pos : pos + 200]
         
-        if "CIVIL" in ctx: tag = "CIVIL"
-        elif "ELETRICA" in ctx: tag = "ELÉTRICA"
-    else: resumo["OK"] += 1
+        # 1. Definição do Serviço (Prioridade para o Tipo de OS)
+        if "CONSERTO" in ctx: servico = "CONSERTO"
+        elif "ADEQUAÇÃO" in ctx: servico = "ADEQUAÇÃO"
+        elif "CIVIL" in ctx: servico = "CIVIL"
+        elif "ELETRICA" in ctx: servico = "ELÉTRICA"
+        elif "MECANICA" in ctx: servico = "MECÂNICA"
+
+        # 2. Definição da Cor baseada na Condição Real
+        if "MÁQUINA PARADA" in ctx:
+            status, cor, classe, icon = "PARADA", "#e74c3c", "blink-top", "🛑"
+            resumo["STOP"] += 1
+        elif any(x in ctx for x in ["MÁQ.PAR.PARCIAL", "PARCIAL"]):
+            status, cor, icon, classe = "AVISO", "#ff8c00", "⚠️", "farol-branco"
+            resumo["AVISO"] += 1
+        else:
+            resumo["OK"] += 1
+    else:
+        resumo["OK"] += 1
 
     processados.append({
         "id_html": formatar_id_visual(at['id']), "n": at['n'], 
-        "status": status, "cor": cor, "classe": classe, "icon": icon, "tag": tag
+        "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
     })
 
-# 3. Cabeçalho e Grid
+# 3. Renderização
 st.markdown(f"""
     <div class="kpi-row">
         <div style="display: flex; gap: 12px;">
@@ -146,6 +127,6 @@ for idx, m in enumerate(processados):
                 <div class="nome-topo">{m['n']}</div>
                 <div class="id-container">{m['id_html']}</div>
                 <div class="status-area" style="color: {m['cor']};">{m['icon']} {m['status']}</div>
-                <div class="tag-manutencao">{m['tag']}</div>
+                <div class="tag-servico">{m['servico']}</div>
             </div>
         """, unsafe_allow_html=True)
