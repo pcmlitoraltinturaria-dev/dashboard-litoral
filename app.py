@@ -3,16 +3,22 @@ import requests
 from datetime import datetime
 import re
 
-# 1. Configuração de UI - Máximo Aproveitamento de Espaço
+# 1. Configuração de UI - Centralização e Layout Limpo
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
 st.markdown("""
     <style>
-    /* Remove todas as margens e paddings do Streamlit */
-    .block-container { padding: 0rem !important; max-width: 100% !important; margin-top: -50px; }
-    .stApp { background-color: #0b0e14; overflow: hidden; }
-    header {visibility: hidden;} /* Esconde a barra superior do Streamlit */
+    /* Reset de margens do Streamlit para centralizar o conteúdo */
+    .block-container { 
+        padding: 1rem 2rem !important; 
+        max-width: 100% !important; 
+        margin: 0 auto;
+    }
     
+    .stApp { background-color: #0b0e14; }
+    header { visibility: hidden; }
+
+    /* Animações de Status */
     @keyframes piscar-robusto { 
         0% { border-top-color: #ff0000; } 
         50% { border-top-color: #660000; } 
@@ -24,18 +30,21 @@ st.markdown("""
         100% { background-position: 200% 0; } 
     }
 
+    /* Card Centralizado */
     .card {
         background-color: #1a1f29; 
-        padding: 12px 5px; 
+        padding: 15px 5px; 
         border-radius: 4px;
         text-align: center; 
-        margin-bottom: 6px; 
-        min-height: 165px; 
+        margin-bottom: 8px; 
+        min-height: 180px; 
         border-top: 10px solid; 
         display: flex; 
         flex-direction: column;
-        justify-content: space-between;
+        justify-content: center; /* Centraliza verticalmente o conteúdo */
+        align-items: center;     /* Centraliza horizontalmente o conteúdo */
         border: 1px solid #232a37;
+        width: 100%;
     }
 
     .blink-top { 
@@ -53,23 +62,58 @@ st.markdown("""
         animation: efeito-farol-lento 3s linear infinite; 
     }
 
-    .nome-topo { color: #a0aec0; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-    .id-container { color: #ffffff; line-height: 1; margin: 2px 0; }
-    .id-letras { font-size: 1.1rem; font-weight: 700; opacity: 0.5; }
-    .id-numeros { font-size: 3.2rem; font-weight: 900; }
+    /* Tipografia Centralizada */
+    .nome-topo { 
+        color: #a0aec0; 
+        font-size: 0.85rem; 
+        font-weight: 700; 
+        text-transform: uppercase;
+        margin-bottom: 5px;
+    }
     
-    .status-area { font-weight: 900; font-size: 1rem; text-transform: uppercase; }
+    .id-container { 
+        color: #ffffff; 
+        line-height: 1; 
+        margin: 10px 0;
+        display: flex;
+        justify-content: center;
+        align-items: baseline;
+    }
+    
+    .id-letras { font-size: 1.3rem; font-weight: 700; opacity: 0.6; margin-right: 4px; }
+    .id-numeros { font-size: 3.5rem; font-weight: 900; }
+    
+    .status-area { 
+        font-weight: 900; 
+        font-size: 1.1rem; 
+        text-transform: uppercase; 
+        margin: 8px 0;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
     .tag-servico { 
-        color: #ffffff !important; font-weight: bold; font-size: 0.8rem; 
-        background: #334155; border-radius: 3px; padding: 4px 0;
+        color: #ffffff !important; 
+        font-weight: bold; 
+        font-size: 0.85rem; 
+        background: #334155; 
+        border-radius: 3px; 
+        padding: 6px 12px;
+        width: 90%;
+        text-align: center;
     }
 
-    /* Ajuste fino das colunas */
-    [data-testid="column"] { padding: 2px !important; }
+    /* Grid layout */
+    [data-testid="column"] { 
+        display: flex;
+        justify-content: center;
+        padding: 4px !important; 
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Ativos
+# 2. Lista de Ativos
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
@@ -77,7 +121,7 @@ ativos = [
     {"id": "_1202", "n": "LK"}, {"id": "1404", "n": "HIDRORELAX"}, {"id": "1601", "n": "CORANTE"},
     {"id": "QUIMICO_1602", "n": "QUÍMICO"}, {"id": "1306", "n": "HT 1306"}, {"id": "1311", "n": "HT 1311"},
     {"id": "1314", "n": "HT 1314"}, {"id": "HT_1324", "n": "HT 1324"}, {"id": "HT_1308", "n": "HT 1308"},
-    {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}, {"id": "1001", "n": "FELP 1"},
+    {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}, {"id": "1001", "font-size": "FELP 1"},
     {"id": "1002", "n": "FELP 2"}, {"id": "2603", "n": "SECADOR"}, {"id": "HT_1316", "n": "HT 1316"}
 ]
 
@@ -118,11 +162,11 @@ for at in ativos:
             status, cor, icon, classe, servico = "AVISO", "#ff8c00", "⚠️", "farol-branco", f"PARCIAL/{tipo_base.capitalize()}"
         
     processados.append({
-        "id_html": formatar_id_visual(at['id']), "n": at['n'], 
+        "id_html": formatar_id_visual(at['id']), "n": at.get('n', ""), 
         "status": status, "cor": cor, "classe": classe, "icon": icon, "servico": servico
     })
 
-# 3. Grid de Máquinas (Sem cabeçalho, direto ao ponto)
+# 3. Renderização do Grid Centralizado
 cols = st.columns(8)
 for idx, m in enumerate(processados):
     with cols[idx % 8]:
@@ -130,7 +174,10 @@ for idx, m in enumerate(processados):
             <div class="card {m['classe']}" style="border-top-color: {m['cor'] if not m['classe'] else 'transparent'};">
                 <div class="nome-topo">{m['n']}</div>
                 <div class="id-container">{m['id_html']}</div>
-                <div class="status-area" style="color: {m['cor']};">{m['icon']} {m['status']}</div>
+                <div class="status-area" style="color: {m['cor']};">
+                    <span>{m['icon']}</span>
+                    <span>{m['status']}</span>
+                </div>
                 <div class="tag-servico">{m['servico']}</div>
             </div>
         """, unsafe_allow_html=True)
