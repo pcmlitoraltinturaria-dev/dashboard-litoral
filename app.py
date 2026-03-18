@@ -2,16 +2,34 @@ import streamlit as st
 import requests
 from datetime import datetime
 
-# 1. Configuração e Auto-Refresh
+# 1. Configuração de Página
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
-st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 30000);</script>", height=0)
 
-# 2. CSS (Ajuste de fontes e espaçamento)
+# 2. CSS - Estilo do Botão de Destaque e Cards
 st.markdown("""
     <style>
+    /* Empurra o conteúdo para baixo */
     .block-container { padding-top: 5.5rem !important; max-width: 98% !important; margin: 0 auto; }
     .stApp { background-color: #0b0e14; }
     header { visibility: hidden; }
+
+    /* Estilização do Botão de Atualizar para destacar do fundo */
+    div.stButton > button {
+        background-color: #007bff !important; /* Azul vibrante */
+        color: white !important;
+        font-weight: bold !important;
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 10px 24px !important;
+        width: 100% !important;
+        box-shadow: 0px 4px 15px rgba(0, 123, 255, 0.4) !important;
+    }
+    div.stButton > button:hover {
+        background-color: #0056b3 !important;
+        border: 1px solid white !important;
+    }
+
+    /* Cards das Máquinas */
     .card {
         background-color: #1a1f29; padding: 12px 5px; border-radius: 5px;
         text-align: center; margin-bottom: 8px; min-height: 155px; 
@@ -29,12 +47,18 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
+# 3. Função de Busca de Dados
 def buscar_dados():
     try:
         r = requests.get("https://dashboard-manutencao-ef55f-default-rtdb.firebaseio.com/manutencao.json")
-        # Limpa espaços duplos para busca precisa
         return " ".join(r.text.upper().split()) if r.text else ""
     except: return ""
+
+# Cabeçalho com o Botão de Atualizar
+col_btn, col_txt = st.columns([1, 4])
+with col_btn:
+    if st.button("🔄 ATUALIZAR PAINEL"):
+        st.rerun() # Comando para atualizar a página na hora
 
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
@@ -51,14 +75,12 @@ string_bruta = buscar_dados()
 cols = st.columns(8)
 
 for idx, at in enumerate(ativos):
-    # PADRÃO SEMPRE VERDE
     status, cor, classe, icon, servico = "NORMAL", "#2ecc71", "border-verde", "✅", "EM OPERAÇÃO"
     
     pos = string_bruta.find(at['id'])
     if pos != -1:
-        # OLHA APENAS OS PRÓXIMOS 60 CARACTERES (Impedindo de ler o status da vizinha)
+        # Lógica Blindada (olha apenas 60 caracteres após o ID)
         ctx = string_bruta[pos : pos + 60]
-        
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-vermelho", "🛑", "CORRETIVA"
         elif "PARCIAL" in ctx:
@@ -75,3 +97,6 @@ for idx, at in enumerate(ativos):
                 <div class="tag-servico">{servico}</div>
             </div>
         """, unsafe_allow_html=True)
+
+# Mantive o refresh automático de 30s também, para caso ninguém clique no botão
+st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 30000);</script>", height=0)
