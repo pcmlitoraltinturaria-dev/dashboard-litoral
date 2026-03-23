@@ -5,15 +5,13 @@ import time
 # 1. Configuração de Página
 st.set_page_config(page_title="Monitoramento Litoral", layout="wide")
 
-# 2. CSS - Ajuste de Posição (Subindo tudo) e Estilo do Botão
+# 2. CSS - Ajuste de Posição e Estilo do Botão
 st.markdown("""
     <style>
-    /* Reduz o espaçamento superior ao máximo para subir tudo */
     .block-container { padding-top: 1rem !important; max-width: 98% !important; margin: 0 auto; }
     .stApp { background-color: #0b0e14; }
     header { visibility: hidden; }
 
-    /* Botão de Atualizar com destaque e feedback visual */
     div.stButton > button {
         background-color: #007bff !important;
         color: white !important;
@@ -26,13 +24,11 @@ st.markdown("""
         transition: all 0.2s ease;
     }
     
-    /* Simulação de clique (efeito visual quando pressionado) */
     div.stButton > button:active {
         transform: scale(0.95);
-        background-color: #ff8c00 !important; /* Muda para laranja ao clicar */
+        background-color: #ff8c00 !important;
     }
 
-    /* Cards das Máquinas */
     .card {
         background-color: #1a1f29; padding: 12px 5px; border-radius: 5px;
         text-align: center; margin-bottom: 8px; min-height: 155px; 
@@ -57,21 +53,23 @@ def buscar_dados():
         return " ".join(r.text.upper().split()) if r.text else ""
     except: return ""
 
-# Cabeçalho com Botão e Feedback de Clique
+# Cabeçalho com Botão
 if st.button("🔄 ATUALIZAR AGORA"):
     with st.spinner('Atualizando dados...'):
-        time.sleep(0.5) # Pequena pausa para você ver que o botão reagiu
+        time.sleep(0.5)
         st.rerun()
 
+# Lista de Ativos Atualizada (Inclusão da HT 1307)
 ativos = [
     {"id": "701", "n": "BIANCO"}, {"id": "1501", "n": "BRASTEC 1"}, {"id": "1502", "n": "BRASTEC 2"},
     {"id": "1503", "n": "BRASTEC 3"}, {"id": "1504", "n": "BRASTEC 4"}, {"id": "1506", "n": "BRASTEC 6"},
     {"id": "804", "n": "ALBRECHT"}, {"id": "803", "n": "LAFER"}, {"id": "1201", "n": "UNITECH"},
     {"id": "_1202", "n": "LK"}, {"id": "1404", "n": "HIDRORELAX"}, {"id": "1601", "n": "CORANTE"},
-    {"id": "QUIMICO_1602", "n": "QUÍMICO"}, {"id": "1306", "n": "HT 1306"}, {"id": "1311", "n": "HT 1311"},
-    {"id": "1314", "n": "HT 1314"}, {"id": "HT_1324", "n": "HT 1324"}, {"id": "HT_1308", "n": "HT 1308"},
-    {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}, {"id": "1001", "n": "FELP 1"},
-    {"id": "1002", "n": "FELP 2"}, {"id": "2603", "n": "SECADOR"}, {"id": "HT_1316", "n": "HT 1316"}
+    {"id": "QUIMICO_1602", "n": "QUÍMICO"}, {"id": "1306", "n": "HT 1306"}, {"id": "HT_1307", "n": "HT 1307"}, # <-- ADICIONADA AQUI
+    {"id": "1311", "n": "HT 1311"}, {"id": "1314", "n": "HT 1314"}, {"id": "HT_1324", "n": "HT 1324"}, 
+    {"id": "HT_1308", "n": "HT 1308"}, {"id": "HT_1303", "n": "HT 1303"}, {"id": "HT_1313", "n": "HT 1313"}, 
+    {"id": "1001", "n": "FELP 1"}, {"id": "1002", "n": "FELP 2"}, {"id": "2603", "n": "SECADOR"}, 
+    {"id": "HT_1316", "n": "HT 1316"}
 ]
 
 string_bruta = buscar_dados()
@@ -82,6 +80,7 @@ for idx, at in enumerate(ativos):
     
     pos = string_bruta.find(at['id'])
     if pos != -1:
+        # Lógica de 60 caracteres para precisão
         ctx = string_bruta[pos : pos + 60]
         if "MÁQUINA PARADA" in ctx:
             status, cor, classe, icon, servico = "PARADA", "#ff0000", "border-vermelho", "🛑", "CORRETIVA"
@@ -100,5 +99,4 @@ for idx, at in enumerate(ativos):
             </div>
         """, unsafe_allow_html=True)
 
-# Mantém o refresh automático silencioso a cada 30s
 st.components.v1.html("<script>setTimeout(function(){window.location.reload();}, 30000);</script>", height=0)
